@@ -87,7 +87,7 @@ static void TimerEventHandler(EventData* eventData);
 static int epollFd = -1;
 static Timer iotClientDoWork = { .eventData = {.eventHandler = &AzureDoWorkTimerEventHandler }, .period = { 1, 0 }, .name = "DoWork" };
 static Timer iotClientMeasureSensor = { .eventData = {.eventHandler = &AzureTimerEventHandler }, .period = { 5, 0 }, .name = "MeasureSensor" };
-static Timer rtCoreSend = { .eventData = {.eventHandler = &TimerEventHandler }, .period = { 1, 0 }, .name = "rtCoreSend" };
+static Timer rtCoreSend = { .eventData = {.eventHandler = &TimerEventHandler }, .period = { 10, 0 }, .name = "rtCoreSend" };
 
 //static int timerFd = -1;
 static int sockFd = -1;

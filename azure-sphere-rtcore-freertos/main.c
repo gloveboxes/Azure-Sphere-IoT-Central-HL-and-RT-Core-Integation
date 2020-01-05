@@ -29,7 +29,7 @@ static const uintptr_t IO_CM4_ISU0 = 0x38070500;
 static SemaphoreHandle_t LEDSemphr;
 static QueueHandle_t UARTDataQueue;
 static bool led1RedOn = false;
-static const int led1RedGpio = 8;
+static const int led1RedGpio = 10;
 static const int blinkIntervalsMs[] = { 50, 75, 125, 250, 500, 1000 };
 static int blinkIntervalIndex = 0;
 static const int numBlinkIntervals = sizeof(blinkIntervalsMs) / sizeof(blinkIntervalsMs[0]);
