@@ -202,7 +202,7 @@ static void RTCoreMsgTask(void* pParameters)
 
 		if (buttonPressed && HLAppReady) {
 			const char msg[] = "ButtonPressed";
-			strncpy((char*)buf + payloadStart, msg, sizeof buf);
+			strncpy((char*)buf + payloadStart, msg, sizeof buf - payloadStart);
 			dataSize = payloadStart + sizeof msg - 1;
 
 			EnqueueData(inbound, outbound, sharedBufSize, buf, dataSize);
