@@ -9,7 +9,7 @@
 
 
 #include "mt3620-baremetal.h"
-#include "mt3620-intercore.h"
+#include "mt3620-intercore.h" // Support for intercore comms
 #include "mt3620-gpio.h"
 
 #include "FreeRTOS.h"
@@ -36,6 +36,7 @@ static const int numBlinkIntervals = sizeof(blinkIntervalsMs) / sizeof(blinkInte
 static const int buttonAGpio = 12;
 static const int buttonPressCheckPeriodMs = 10;
 
+// Support for intercore comms
 static BufferHeader* outbound, * inbound;
 static uint32_t sharedBufSize = 0;
 static const size_t payloadStart = 20;
