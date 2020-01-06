@@ -106,6 +106,7 @@ static const char* GetReasonString(IOTHUB_CLIENT_CONNECTION_STATUS_REASON);
 static const char* getAzureSphereProvisioningResultString(AZURE_SPHERE_PROV_RETURN_VALUE);
 static int InitPeripheralsAndHandlers(void);
 static void ClosePeripheralsAndHandlers(void);
+static void initInterCoreComms();
 
 
 
@@ -193,6 +194,7 @@ static int InitPeripheralsAndHandlers(void)
 		return -1;
 	}
 
+	// Open Various Peripherals
 	OpenPeripheral(&sending);
 	OpenPeripheral(&relay);
 	OpenPeripheral(&light);
@@ -201,11 +203,18 @@ static int InitPeripheralsAndHandlers(void)
 	GroveShield_Initialize(&i2cFd, 115200);
 	sht31 = GroveTempHumiSHT31_Open(i2cFd);
 
+	// Initialize Inter Core Communications
+	initInterCoreComms();
+
+	// Start various timers
 	StartTimer(&iotClientDoWork);
 	StartTimer(&iotClientMeasureSensor);
 	StartTimer(&rtCoreSend);
 
+	return 0;
+}
 
+static void initInterCoreComms() {
 	// Open connection to real-time capable application.
 	sockFd = Application_Socket(rtAppComponentId);
 	if (sockFd == -1) {
@@ -225,8 +234,6 @@ static int InitPeripheralsAndHandlers(void)
 	if (RegisterEventHandlerToEpoll(epollFd, sockFd, &socketEventData, EPOLLIN) != 0) {
 		return -1;
 	}
-
-	return 0;
 }
 
 /// <summary>
