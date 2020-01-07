@@ -9,14 +9,12 @@
 
 
 #include "mt3620-baremetal.h"
-#include "mt3620-intercore.h" // Support for intercore comms
+#include "mt3620-intercore.h" // Support for inter Core Communications
 #include "mt3620-gpio.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
 #include "semphr.h"
-#include "queue.h"
-//#include "guid.h"
 
 #include "printf.h"
 
@@ -29,14 +27,16 @@ static const uintptr_t IO_CM4_ISU0 = 0x38070500;
 static SemaphoreHandle_t LEDSemphr;
 static QueueHandle_t UARTDataQueue;
 static bool led1RedOn = false;
+
 static const int led1RedGpio = 10;
+static const int buttonAGpio = 12;
+
 static const int blinkIntervalsMs[] = { 75, 125, 250, 500, 1000, 2000 };
 static int blinkIntervalIndex = 0;
 static const int numBlinkIntervals = sizeof(blinkIntervalsMs) / sizeof(blinkIntervalsMs[0]);
-static const int buttonAGpio = 12;
 static const int buttonPressCheckPeriodMs = 10;
 
-// Support for intercore comms
+// Support for inter core communications
 static BufferHeader* outbound, * inbound;
 static uint32_t sharedBufSize = 0;
 static const size_t payloadStart = 20;

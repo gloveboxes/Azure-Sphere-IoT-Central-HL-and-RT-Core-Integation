@@ -16,8 +16,6 @@
 #include <iothub.h>
 #include <azure_sphere_provisioning.h>
 
-
-
 // Core to core communications libraries
 #include <ctype.h>
 #include <sys/time.h>
@@ -33,9 +31,11 @@
 
 #include "parson.h"
 
+// GPIO Pins used in the HL App
 #define SEND_STATUS_PIN 19
 #define LIGHT_PIN 21
 #define RELAY_PIN 0
+
 #define JSON_MESSAGE_BYTES 100  // Number of bytes to allocate for the JSON telemetry message for IoT Central
 #define SCOPEID_LENGTH 20
 
@@ -82,12 +82,12 @@ static Peripheral relay = { -1, RELAY_PIN, GPIO_Value_Low, false, false, "RelayS
 static void AzureTimerEventHandler(EventData*);
 static void AzureDoWorkTimerEventHandler(EventData*);
 static void SocketEventHandler(EventData* eventData);
-static void TimerEventHandler(EventData* eventData);
+static void InterCoreHeartBeat(EventData* eventData);
 
 static int epollFd = -1;
 static Timer iotClientDoWork = { .eventData = {.eventHandler = &AzureDoWorkTimerEventHandler }, .period = { 1, 0 }, .name = "DoWork" };
-static Timer iotClientMeasureSensor = { .eventData = {.eventHandler = &AzureTimerEventHandler }, .period = { 5, 0 }, .name = "MeasureSensor" };
-static Timer rtCoreSend = { .eventData = {.eventHandler = &TimerEventHandler }, .period = { 10, 0 }, .name = "rtCoreSend" };
+static Timer iotClientMeasureSensor = { .eventData = {.eventHandler = &AzureTimerEventHandler }, .period = { 6, 0 }, .name = "MeasureSensor" };
+static Timer rtCoreSend = { .eventData = {.eventHandler = &InterCoreHeartBeat }, .period = { 6, 0 }, .name = "rtCoreSend" };
 
 //static int timerFd = -1;
 static int sockFd = -1;
@@ -411,7 +411,7 @@ static void TwinReportState(const char* propertyName, bool propertyValue)
 }
 
 /// <summary>
-///     Sends telemetry to IoT Hub
+///     Sends telemetry to Azure IoT Central
 /// </summary>
 static void SendTelemetry(void)
 {
@@ -615,6 +615,38 @@ static const char* GetReasonString(IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason
 	return reasonString;
 }
 
+
+/// <summary>
+///     Handle send timer event by writing data to the real-time capable application.
+/// </summary>
+static void InterCoreHeartBeat(EventData* eventData)
+{
+	if (ConsumeTimerFdEvent(rtCoreSend.fd) != 0) {
+		terminationRequired = true;
+		return;
+	}
+
+	SendMessageToRTCore();
+}
+
+/// <summary>
+///     Helper function for TimerEventHandler sends message to real-time capable application.
+/// </summary>
+static void SendMessageToRTCore(void)
+{
+	static int iter = 0;
+
+	static char txMessage[32];
+	sprintf(txMessage, "HeartBeat-%d", iter++);
+
+	int bytesSent = send(sockFd, txMessage, strlen(txMessage), 0);
+	if (bytesSent == -1) {
+		Log_Debug("ERROR: Unable to send message: %d (%s)\n", errno, strerror(errno));
+		terminationRequired = true;
+		return;
+	}
+}
+
 /// <summary>
 ///     Handle socket event by reading incoming data from real-time capable application.
 /// </summary>
@@ -653,36 +685,5 @@ static void SocketEventHandler(EventData* eventData)
 	}
 	else {
 		GPIO_SetValue(relay.fd, GPIO_Value_Low);
-	}
-}
-
-/// <summary>
-///     Handle send timer event by writing data to the real-time capable application.
-/// </summary>
-static void TimerEventHandler(EventData* eventData)
-{
-	if (ConsumeTimerFdEvent(rtCoreSend.fd) != 0) {
-		terminationRequired = true;
-		return;
-	}
-
-	SendMessageToRTCore();
-}
-
-/// <summary>
-///     Helper function for TimerEventHandler sends message to real-time capable application.
-/// </summary>
-static void SendMessageToRTCore(void)
-{
-	static int iter = 0;
-
-	static char txMessage[32];
-	sprintf(txMessage, "HeartBeat-%d", iter++);
-
-	int bytesSent = send(sockFd, txMessage, strlen(txMessage), 0);
-	if (bytesSent == -1) {
-		Log_Debug("ERROR: Unable to send message: %d (%s)\n", errno, strerror(errno));
-		terminationRequired = true;
-		return;
 	}
 }
