@@ -79,14 +79,14 @@ static Peripheral sending = { -1, SEND_STATUS_PIN, GPIO_Value_High, true, false,
 static Peripheral light = { -1, LIGHT_PIN, GPIO_Value_High, true, false, "LightStatus" };
 static Peripheral relay = { -1, RELAY_PIN, GPIO_Value_Low, false, false, "RelayStatus" };
 
-static void AzureTimerEventHandler(EventData*);
+static void AzureMeasureSensorEventHandler(EventData*);
 static void AzureDoWorkTimerEventHandler(EventData*);
-static void SocketEventHandler(EventData* eventData);
-static void InterCoreHeartBeat(EventData* eventData);
+static void SocketEventHandler(EventData*);
+static void InterCoreHeartBeat(EventData*);
 
 static int epollFd = -1;
 static Timer iotClientDoWork = { .eventData = {.eventHandler = &AzureDoWorkTimerEventHandler }, .period = { 1, 0 }, .name = "DoWork" };
-static Timer iotClientMeasureSensor = { .eventData = {.eventHandler = &AzureTimerEventHandler }, .period = { 10, 0 }, .name = "MeasureSensor" };
+static Timer iotClientMeasureSensor = { .eventData = {.eventHandler = &AzureMeasureSensorEventHandler }, .period = { 10, 0 }, .name = "MeasureSensor" };
 static Timer rtCoreHeatBeat = { .eventData = {.eventHandler = &InterCoreHeartBeat }, .period = { 30, 0 }, .name = "rtCoreSend" };
 
 //static int timerFd = -1;
@@ -459,7 +459,7 @@ static void AzureDoWorkTimerEventHandler(EventData* eventData) {
 /// <summary>
 /// Azure timer event:  Check connection status and send telemetry
 /// </summary>
-static void AzureTimerEventHandler(EventData* eventData)
+static void AzureMeasureSensorEventHandler(EventData* eventData)
 {
 	if (ConsumeTimerFdEvent(iotClientMeasureSensor.fd) != 0) {
 		terminationRequired = true;
@@ -478,7 +478,7 @@ static void AzureTimerEventHandler(EventData* eventData)
 
 	if (iothubAuthenticated) {
 		SendTelemetry();
-		IoTHubDeviceClient_LL_DoWork(iothubClientHandle);
+		//IoTHubDeviceClient_LL_DoWork(iothubClientHandle);
 	}
 }
 
@@ -650,6 +650,48 @@ static void SendMessageToRTCore(void)
 	}
 }
 
+static void SendEventMsg() {
+	static int buttonPressCount = 0;
+	bool isNetworkReady = false;
+
+	if (Networking_IsNetworkingReady(&isNetworkReady) != -1) {
+		if (isNetworkReady && !iothubAuthenticated) {
+			SetupAzureClient();
+		}
+	}
+	else {
+		Log_Debug("Failed to get Network state\n");
+	}
+
+	if (iothubAuthenticated) {
+		preSendTelemtry();
+
+		static char eventBuffer[JSON_MESSAGE_BYTES] = { 0 };
+		static const char* EventMsgTemplate = "{ \"ButtonPressed\": %d }";
+
+		snprintf(eventBuffer, JSON_MESSAGE_BYTES, EventMsgTemplate, ++buttonPressCount);		
+
+		IOTHUB_MESSAGE_HANDLE messageHandle = IoTHubMessage_CreateFromString(eventBuffer);
+
+		if (messageHandle == 0) {
+			Log_Debug("WARNING: unable to create a new IoTHubMessage\n");
+			return;
+		}
+
+		if (IoTHubDeviceClient_LL_SendEventAsync(iothubClientHandle, messageHandle, SendMessageCallback,
+			/*&callback_param*/ 0) != IOTHUB_CLIENT_OK) {
+			Log_Debug("WARNING: failed to hand over the message to IoTHubClient\n");
+		}
+		else {
+			Log_Debug("INFO: IoTHubClient accepted the message for delivery\n");
+		}
+
+		IoTHubMessage_Destroy(messageHandle);
+
+		postSendTelemetry();
+	}
+}
+
 /// <summary>
 ///     Handle socket event by reading incoming data from real-time capable application.
 /// </summary>
@@ -689,4 +731,6 @@ static void SocketEventHandler(EventData* eventData)
 	else {
 		GPIO_SetValue(relay.fd, GPIO_Value_Low);
 	}
+
+	SendEventMsg();
 }
