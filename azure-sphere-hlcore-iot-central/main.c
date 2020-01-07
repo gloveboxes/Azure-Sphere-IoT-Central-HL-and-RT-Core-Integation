@@ -87,7 +87,7 @@ static void InterCoreHeartBeat(EventData* eventData);
 static int epollFd = -1;
 static Timer iotClientDoWork = { .eventData = {.eventHandler = &AzureDoWorkTimerEventHandler }, .period = { 1, 0 }, .name = "DoWork" };
 static Timer iotClientMeasureSensor = { .eventData = {.eventHandler = &AzureTimerEventHandler }, .period = { 6, 0 }, .name = "MeasureSensor" };
-static Timer rtCoreSend = { .eventData = {.eventHandler = &InterCoreHeartBeat }, .period = { 6, 0 }, .name = "rtCoreSend" };
+static Timer rtCoreHeatBeat = { .eventData = {.eventHandler = &InterCoreHeartBeat }, .period = { 6, 0 }, .name = "rtCoreSend" };
 
 //static int timerFd = -1;
 static int sockFd = -1;
@@ -106,7 +106,7 @@ static const char* GetReasonString(IOTHUB_CLIENT_CONNECTION_STATUS_REASON);
 static const char* getAzureSphereProvisioningResultString(AZURE_SPHERE_PROV_RETURN_VALUE);
 static int InitPeripheralsAndHandlers(void);
 static void ClosePeripheralsAndHandlers(void);
-static void initInterCoreComms();
+static void InitInterCoreComms();
 
 
 
@@ -203,18 +203,18 @@ static int InitPeripheralsAndHandlers(void)
 	GroveShield_Initialize(&i2cFd, 115200);
 	sht31 = GroveTempHumiSHT31_Open(i2cFd);
 
-	// Initialize Inter Core Communications
-	initInterCoreComms();
+	InitInterCoreComms();  // Initialize Inter Core Communications
+	SendMessageToRTCore(); // Prime RT Core with Component ID Signature
 
 	// Start various timers
 	StartTimer(&iotClientDoWork);
 	StartTimer(&iotClientMeasureSensor);
-	StartTimer(&rtCoreSend);
+	StartTimer(&rtCoreHeatBeat);
 
 	return 0;
 }
 
-static void initInterCoreComms() {
+static void InitInterCoreComms() {
 	// Open connection to real-time capable application.
 	sockFd = Application_Socket(rtAppComponentId);
 	if (sockFd == -1) {
@@ -244,7 +244,7 @@ static void ClosePeripheralsAndHandlers(void)
 	Log_Debug("Closing file descriptors\n");
 	CloseFdAndPrintError(iotClientDoWork.fd, iotClientDoWork.name);
 	CloseFdAndPrintError(iotClientMeasureSensor.fd, iotClientMeasureSensor.name);
-	CloseFdAndPrintError(rtCoreSend.fd, rtCoreSend.name);
+	CloseFdAndPrintError(rtCoreHeatBeat.fd, rtCoreHeatBeat.name);
 	CloseFdAndPrintError(sending.fd, sending.twinProperty);
 	CloseFdAndPrintError(relay.fd, relay.twinProperty);
 	CloseFdAndPrintError(epollFd, "Epoll");
@@ -621,7 +621,7 @@ static const char* GetReasonString(IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason
 /// </summary>
 static void InterCoreHeartBeat(EventData* eventData)
 {
-	if (ConsumeTimerFdEvent(rtCoreSend.fd) != 0) {
+	if (ConsumeTimerFdEvent(rtCoreHeatBeat.fd) != 0) {
 		terminationRequired = true;
 		return;
 	}
