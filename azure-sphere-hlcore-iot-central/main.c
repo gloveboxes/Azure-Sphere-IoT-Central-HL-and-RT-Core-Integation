@@ -86,7 +86,7 @@ static void InterCoreHeartBeat(EventData* eventData);
 
 static int epollFd = -1;
 static Timer iotClientDoWork = { .eventData = {.eventHandler = &AzureDoWorkTimerEventHandler }, .period = { 1, 0 }, .name = "DoWork" };
-static Timer iotClientMeasureSensor = { .eventData = {.eventHandler = &AzureTimerEventHandler }, .period = { 6, 0 }, .name = "MeasureSensor" };
+static Timer iotClientMeasureSensor = { .eventData = {.eventHandler = &AzureTimerEventHandler }, .period = { 10, 0 }, .name = "MeasureSensor" };
 static Timer rtCoreHeatBeat = { .eventData = {.eventHandler = &InterCoreHeartBeat }, .period = { 30, 0 }, .name = "rtCoreSend" };
 
 //static int timerFd = -1;
