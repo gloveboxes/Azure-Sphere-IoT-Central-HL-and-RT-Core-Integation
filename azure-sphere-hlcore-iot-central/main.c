@@ -87,7 +87,7 @@ static void InterCoreHeartBeat(EventData* eventData);
 static int epollFd = -1;
 static Timer iotClientDoWork = { .eventData = {.eventHandler = &AzureDoWorkTimerEventHandler }, .period = { 1, 0 }, .name = "DoWork" };
 static Timer iotClientMeasureSensor = { .eventData = {.eventHandler = &AzureTimerEventHandler }, .period = { 6, 0 }, .name = "MeasureSensor" };
-static Timer rtCoreHeatBeat = { .eventData = {.eventHandler = &InterCoreHeartBeat }, .period = { 6, 0 }, .name = "rtCoreSend" };
+static Timer rtCoreHeatBeat = { .eventData = {.eventHandler = &InterCoreHeartBeat }, .period = { 30, 0 }, .name = "rtCoreSend" };
 
 //static int timerFd = -1;
 static int sockFd = -1;
@@ -106,7 +106,7 @@ static const char* GetReasonString(IOTHUB_CLIENT_CONNECTION_STATUS_REASON);
 static const char* getAzureSphereProvisioningResultString(AZURE_SPHERE_PROV_RETURN_VALUE);
 static int InitPeripheralsAndHandlers(void);
 static void ClosePeripheralsAndHandlers(void);
-static void InitInterCoreComms();
+static int InitInterCoreComms(void);
 
 
 
@@ -169,6 +169,7 @@ static int OpenPeripheral(Peripheral* peripheral) {
 			strerror(errno), errno);
 		return -1;
 	}
+	return 0;
 }
 
 static int StartTimer(Timer* timer) {
@@ -176,6 +177,7 @@ static int StartTimer(Timer* timer) {
 	if (timer->fd < 0) {
 		return -1;
 	}
+	return 0;
 }
 
 /// <summary>
@@ -214,7 +216,7 @@ static int InitPeripheralsAndHandlers(void)
 	return 0;
 }
 
-static void InitInterCoreComms() {
+static int InitInterCoreComms() {
 	// Open connection to real-time capable application.
 	sockFd = Application_Socket(rtAppComponentId);
 	if (sockFd == -1) {
@@ -234,6 +236,7 @@ static void InitInterCoreComms() {
 	if (RegisterEventHandlerToEpoll(epollFd, sockFd, &socketEventData, EPOLLIN) != 0) {
 		return -1;
 	}
+	return 0;
 }
 
 /// <summary>
