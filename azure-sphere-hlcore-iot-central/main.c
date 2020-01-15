@@ -1,47 +1,78 @@
-﻿#include <stdbool.h>
-#include <errno.h>
-#include <string.h>
-#include <time.h>
-#include <signal.h>
-#include <stdio.h>
-
-#include <applibs/log.h>
-#include <applibs/gpio.h>
-
-// Grove Temperature and Humidity Sensor
-#include "../MT3620_Grove_Shield/MT3620_Grove_Shield_Library/Grove.h"
+﻿#include "../MT3620_Grove_Shield/MT3620_Grove_Shield_Library/Grove.h"
 #include "../MT3620_Grove_Shield/MT3620_Grove_Shield_Library/Sensors/GroveTempHumiSHT31.h"
-
 #include "globals.h"
 #include "inter_core.h"
 #include "iot_hub.h"
+#include <applibs/gpio.h>
+#include <applibs/log.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <time.h>
 
-static const char * rtAppComponentId = "6583cf17-d321-4d72-8283-0b7c5b56442b";
+// GPIO Pins used in the High Level (HL) Application
+#define SEND_STATUS_PIN 19
+#define LIGHT_PIN 21
+#define RELAY_PIN 0
+#define JSON_MESSAGE_BYTES 100  // Number of bytes to allocate for the JSON telemetry message for IoT Central
+
+static char msgBuffer[JSON_MESSAGE_BYTES] = { 0 };
+static char rtAppComponentId[RT_APP_COMPONENT_LENGTH];  //initialized from cmdline argument
+//static const char* rtAppComponentId = "6583cf17-d321-4d72-8283-0b7c5b56442b";
 
 static int epollFd = -1;
 static int i2cFd;
 static void* sht31;
 
-// GPIO Pins used in the HL App
-#define SEND_STATUS_PIN 19
-#define LIGHT_PIN 21
-#define RELAY_PIN 0
-
-static Peripheral sending = { -1, SEND_STATUS_PIN, GPIO_Value_High, true, false, "SendStatus" };
-static Peripheral light = { -1, LIGHT_PIN, GPIO_Value_High, true, false, "LightStatus" };
-static Peripheral relay = { -1, RELAY_PIN, GPIO_Value_Low, false, false, "RelayStatus" };
+static Peripheral sendStatus = {
+	.fd = -1,
+	.pin = SEND_STATUS_PIN,
+	.initialState = GPIO_Value_High,
+	.invertPin = true,
+	.twinState = false,
+	.twinProperty = "SendStatus"
+};
+static Peripheral light = {
+	.fd = -1,
+	.pin = LIGHT_PIN,
+	.initialState = GPIO_Value_High,
+	.invertPin = true,
+	.twinState = false,
+	.twinProperty = "LightStatus"
+};
+static Peripheral relay = { 
+	.fd = -1, 
+	.pin = RELAY_PIN,
+	.initialState =  GPIO_Value_Low,
+	.invertPin = false,
+	.twinState = false,
+	.twinProperty = "RelayStatus"
+};
 
 // Forward signatures
-static void TerminationHandler(int);
+static void TerminationHandler(int signalNumber);
 static int InitPeripheralsAndHandlers(void);
 static void ClosePeripheralsAndHandlers(void);
 static void InterCoreCallBack(char* msg);
-static void MeasureSendEventHandler(EventData*);
-static void InterCoreHeartBeat(EventData*);
+static void MeasureSendEventHandler(EventData* eventData);
+static void RtCoreHeartBeat(EventData* eventData);
+static int OpenPeripheral(Peripheral* peripheral);
+static int StartTimer(Timer* timer);
 
-static Timer iotClientDoWork = { .eventData = {.eventHandler = &AzureDoWorkTimerEventHandler }, .period = { 1, 0 }, .name = "DoWork" };
-static Timer measureSensor = { .eventData = {.eventHandler = &MeasureSendEventHandler }, .period = { 10, 0 }, .name = "MeasureSensor" };
-static Timer rtCoreHeatBeat = { .eventData = {.eventHandler = &InterCoreHeartBeat }, .period = { 30, 0 }, .name = "rtCoreSend" };
+static Timer iotClientDoWork = { 
+	.eventData = {.eventHandler = &AzureDoWorkTimerEventHandler }, 
+	.period = { 1, 0 }, 
+	.name = "DoWork" 
+};
+static Timer measureSensor = { 
+	.eventData = {.eventHandler = &MeasureSendEventHandler }, 
+	.period = { 10, 0 }, 
+	.name = "MeasureSensor" 
+};
+static Timer rtCoreHeatBeat = { 
+	.eventData = {.eventHandler = &RtCoreHeartBeat }, 
+	.period = { 30, 0 }, 
+	.name = "rtCoreSend" 
+};
 
 Peripheral* deviceTwins[] = { &relay, &light };
 
@@ -49,12 +80,15 @@ int main(int argc, char* argv[])
 {
 	Log_Debug("IoT Hub/Central Application starting.\n");
 
-	if (argc == 2) {
+	if (argc == 3) {
 		Log_Debug("Setting Azure Scope ID %s\n", argv[1]);
 		strncpy(scopeId, argv[1], SCOPEID_LENGTH);
+
+		Log_Debug("Setting RT Core Component Id %s\n", argv[2]);
+		strncpy(rtAppComponentId, argv[2], RT_APP_COMPONENT_LENGTH);
 	}
 	else {
-		Log_Debug("ScopeId needs to be set in the app_manifest CmdArgs\n");
+		Log_Debug("ScopeId and RT Core ComponentId need to be set in the app_manifest CmdArgs\n");
 		return -1;
 	}
 
@@ -90,30 +124,30 @@ static int ReadTelemetry(char eventBuffer[], size_t len) {
 }
 
 static void preSendTelemtry(void) {
-	GPIO_SetValue(sending.fd, GPIO_Value_Low);
+	GPIO_SetValue(sendStatus.fd, GPIO_Value_Low);
 }
 
 static void postSendTelemetry(void) {
-	GPIO_SetValue(sending.fd, GPIO_Value_High);
+	GPIO_SetValue(sendStatus.fd, GPIO_Value_High);
 }
 
-static int OpenPeripheral(Peripheral* peripheral) {
-	peripheral->fd = GPIO_OpenAsOutput(peripheral->pin, GPIO_OutputMode_PushPull, peripheral->initialState);
-	if (peripheral->fd < 0) {
-		Log_Debug(
-			"Error opening GPIO: %s (%d). Check that app_manifest.json includes the GPIO used.\n",
-			strerror(errno), errno);
-		return -1;
+/// <summary>
+/// Azure timer event:  Check connection status and send telemetry
+/// </summary>
+static void MeasureSendEventHandler(EventData* eventData)
+{
+	if (ConsumeTimerFdEvent(measureSensor.fd) != 0) {
+		terminationRequired = true;
+		return;
 	}
-	return 0;
-}
 
-static int StartTimer(Timer* timer) {
-	timer->fd = CreateTimerFdAndAddToEpoll(epollFd, &timer->period, &timer->eventData, EPOLLIN);
-	if (timer->fd < 0) {
-		return -1;
+	preSendTelemtry();
+
+	if (ReadTelemetry(msgBuffer, JSON_MESSAGE_BYTES) > 0) {
+		SendMsg(msgBuffer);
 	}
-	return 0;
+
+	postSendTelemetry();
 }
 
 static void InterCoreCallBack(char* msg) {
@@ -136,8 +170,9 @@ static void InterCoreCallBack(char* msg) {
 		GPIO_SetValue(relay.fd, GPIO_Value_Low);
 	}
 
-	static const char* EventMsgTemplate = "{ \"ButtonPressed\": %d }";
-	snprintf(msgBuffer, JSON_MESSAGE_BYTES, EventMsgTemplate, ++buttonPressCount);
+	if (snprintf(msgBuffer, JSON_MESSAGE_BYTES, "{ \"ButtonPressed\": %d }", ++buttonPressCount) > 0) {
+		SendMsg(msgBuffer);
+	}
 }
 
 /// <summary>
@@ -156,8 +191,7 @@ static int InitPeripheralsAndHandlers(void)
 		return -1;
 	}
 
-	// Open Various Peripherals
-	OpenPeripheral(&sending);
+	OpenPeripheral(&sendStatus);
 	OpenPeripheral(&relay);
 	OpenPeripheral(&light);
 
@@ -168,7 +202,7 @@ static int InitPeripheralsAndHandlers(void)
 	sht31 = GroveTempHumiSHT31_Open(i2cFd);
 
 	InitInterCoreComms(epollFd, rtAppComponentId, InterCoreCallBack);  // Initialize Inter Core Communications
-	SendMessageToRTCore(); // Prime RT Core with Component ID Signature
+	SendMessageToRTCore("Heart Beat"); // Prime RT Core with Component ID Signature
 
 	// Start various timers
 	StartTimer(&iotClientDoWork);
@@ -178,7 +212,24 @@ static int InitPeripheralsAndHandlers(void)
 	return 0;
 }
 
+static int OpenPeripheral(Peripheral* peripheral) {
+	peripheral->fd = GPIO_OpenAsOutput(peripheral->pin, GPIO_OutputMode_PushPull, peripheral->initialState);
+	if (peripheral->fd < 0) {
+		Log_Debug(
+			"Error opening GPIO: %s (%d). Check that app_manifest.json includes the GPIO used.\n",
+			strerror(errno), errno);
+		return -1;
+	}
+	return 0;
+}
 
+static int StartTimer(Timer* timer) {
+	timer->fd = CreateTimerFdAndAddToEpoll(epollFd, &timer->period, &timer->eventData, EPOLLIN);
+	if (timer->fd < 0) {
+		return -1;
+	}
+	return 0;
+}
 
 /// <summary>
 ///     Close peripherals and handlers.
@@ -189,34 +240,11 @@ static void ClosePeripheralsAndHandlers(void)
 	CloseFdAndPrintError(iotClientDoWork.fd, iotClientDoWork.name);
 	CloseFdAndPrintError(measureSensor.fd, measureSensor.name);
 	CloseFdAndPrintError(rtCoreHeatBeat.fd, rtCoreHeatBeat.name);
-	CloseFdAndPrintError(sending.fd, sending.twinProperty);
+	CloseFdAndPrintError(sendStatus.fd, sendStatus.twinProperty);
 	CloseFdAndPrintError(relay.fd, relay.twinProperty);
 	CloseFdAndPrintError(epollFd, "Epoll");
 }
 
-
-/// <summary>
-/// Azure timer event:  Check connection status and send telemetry
-/// </summary>
-static void MeasureSendEventHandler(EventData* eventData)
-{
-	if (ConsumeTimerFdEvent(measureSensor.fd) != 0) {
-		terminationRequired = true;
-		return;
-	}
-
-	memset(msgBuffer, 0, JSON_MESSAGE_BYTES);
-
-	preSendTelemtry();
-
-	if (ReadTelemetry(msgBuffer, JSON_MESSAGE_BYTES) < 0) {
-		return;
-	}
-
-	SendMsg(msgBuffer);
-
-	postSendTelemetry();
-}
 
 static void TerminationHandler(int signalNumber)
 {
@@ -227,13 +255,16 @@ static void TerminationHandler(int signalNumber)
 /// <summary>
 ///     Handle send timer event by writing data to the real-time capable application.
 /// </summary>
-static void InterCoreHeartBeat(EventData* eventData)
+static void RtCoreHeartBeat(EventData* eventData)
 {
+	static int heartBeatCount = 0;
+
 	if (ConsumeTimerFdEvent(rtCoreHeatBeat.fd) != 0) {
 		terminationRequired = true;
 		return;
 	}
 
-	//SendToRTCore();
-	SendMessageToRTCore();
+	if (sprintf(msgBuffer, "HeartBeat-%d", heartBeatCount++) > 0) {
+		SendMessageToRTCore(msgBuffer);
+	}
 }

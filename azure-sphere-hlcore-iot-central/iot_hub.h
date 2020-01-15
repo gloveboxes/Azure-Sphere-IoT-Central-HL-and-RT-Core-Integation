@@ -1,10 +1,8 @@
 #ifndef iot_hub_h
 #define iot_hub_h
 
-//#include "device_twins.h"
 #include "globals.h"
 #include "parson.h"
-#include <applibs/gpio.h>
 #include <applibs/log.h>
 #include <applibs/networking.h>
 #include <azure_sphere_provisioning.h>
@@ -13,7 +11,6 @@
 #include <iothub_device_client_ll.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #pragma region Azure IoT Hub/IoT Central
 

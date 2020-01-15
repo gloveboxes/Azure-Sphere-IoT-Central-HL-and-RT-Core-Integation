@@ -1,9 +1,9 @@
 #include "iot_hub.h"
 
 IOTHUB_DEVICE_CLIENT_LL_HANDLE iothubClientHandle = NULL;
-Peripheral** _deviceTwins;
+Peripheral** _deviceTwins = NULL;
 size_t _deviceTwinCount = 0;
-bool iothubAuthenticated;
+bool iothubAuthenticated = false;
 const int keepalivePeriodSeconds = 20;
 
 
@@ -20,7 +20,6 @@ void SendMessageCallback(IOTHUB_CLIENT_CONFIRMATION_RESULT result, void* context
 void AzureDoWorkTimerEventHandler(EventData* eventData) {
 	if (iothubClientHandle != NULL) {
 		IoTHubDeviceClient_LL_DoWork(iothubClientHandle);
-		//Log_Debug("do work");
 	}
 }
 
@@ -44,7 +43,7 @@ bool SendMsg(const char* msg) {
 
 	if (iothubAuthenticated) {
 
-		IOTHUB_MESSAGE_HANDLE messageHandle = IoTHubMessage_CreateFromString(msgBuffer);
+		IOTHUB_MESSAGE_HANDLE messageHandle = IoTHubMessage_CreateFromString(msg);
 
 		if (messageHandle == 0) {
 			Log_Debug("WARNING: unable to create a new IoTHubMessage\n");
@@ -275,7 +274,5 @@ void ReportStatusCallback(int result, void* context)
 {
 	Log_Debug("INFO: Device Twin reported properties update result: HTTP status code %d\n", result);
 }
-
-
 
 #pragma endregion

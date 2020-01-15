@@ -5,19 +5,15 @@ void (*_interCoreCallback)(char*);
 int sockFd = -1;
 
 
-bool SendMessageToRTCore()
+bool SendMessageToRTCore(const char * msg)
 {
-	static int iter = 0;
-	static char txMessage[32];
 
 	if (sockFd == -1) {
 		Log_Debug("Socket not initialized");
 		return false;
 	}
 
-	sprintf(txMessage, "HeartBeat-%d", iter++);
-
-	int bytesSent = send(sockFd, txMessage, strlen(txMessage), 0);
+	int bytesSent = send(sockFd, msg, strlen(msg), 0);
 	if (bytesSent == -1) {
 		Log_Debug("ERROR: Unable to send message: %d (%s)\n", errno, strerror(errno));
 		return false;
@@ -55,13 +51,9 @@ int InitInterCoreComms(int epollFd, const char * rtAppComponentId, void (*interC
 /// </summary>
 void SocketEventHandler(EventData* eventData)
 {
-	memset(msgBuffer, 0, JSON_MESSAGE_BYTES);
-
 	if (!ProcessMsg()) {
 		terminationRequired = true;
 	}
-	
-	SendMsg(msgBuffer);
 }
 
 /// <summary>
