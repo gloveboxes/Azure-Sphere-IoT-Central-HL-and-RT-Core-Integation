@@ -16,27 +16,34 @@
 #include "inter_core.h"
 #include "iot_hub.h"
 
-static int msgId = 0;
+static const char * rtAppComponentId = "6583cf17-d321-4d72-8283-0b7c5b56442b";
 
+static int epollFd = -1;
 static int i2cFd;
 static void* sht31;
 
-static void AzureMeasureSensorEventHandler(EventData*);
-void InterCoreHeartBeat(EventData*);
+// GPIO Pins used in the HL App
+#define SEND_STATUS_PIN 19
+#define LIGHT_PIN 21
+#define RELAY_PIN 0
 
-//static int epollFd = -1;
-static Timer iotClientDoWork = { .eventData = {.eventHandler = &AzureDoWorkTimerEventHandler }, .period = { 1, 0 }, .name = "DoWork" };
-static Timer iotClientMeasureSensor = { .eventData = {.eventHandler = &AzureMeasureSensorEventHandler }, .period = { 10, 0 }, .name = "MeasureSensor" };
-static Timer rtCoreHeatBeat = { .eventData = {.eventHandler = &InterCoreHeartBeat }, .period = { 30, 0 }, .name = "rtCoreSend" };
-
+static Peripheral sending = { -1, SEND_STATUS_PIN, GPIO_Value_High, true, false, "SendStatus" };
+static Peripheral light = { -1, LIGHT_PIN, GPIO_Value_High, true, false, "LightStatus" };
+static Peripheral relay = { -1, RELAY_PIN, GPIO_Value_Low, false, false, "RelayStatus" };
 
 // Forward signatures
 static void TerminationHandler(int);
-static void SendTelemetry(void);
-
 static int InitPeripheralsAndHandlers(void);
 static void ClosePeripheralsAndHandlers(void);
+static void InterCoreCallBack(char* msg);
+static void MeasureSendEventHandler(EventData*);
+static void InterCoreHeartBeat(EventData*);
 
+static Timer iotClientDoWork = { .eventData = {.eventHandler = &AzureDoWorkTimerEventHandler }, .period = { 1, 0 }, .name = "DoWork" };
+static Timer measureSensor = { .eventData = {.eventHandler = &MeasureSendEventHandler }, .period = { 10, 0 }, .name = "MeasureSensor" };
+static Timer rtCoreHeatBeat = { .eventData = {.eventHandler = &InterCoreHeartBeat }, .period = { 30, 0 }, .name = "rtCoreSend" };
+
+Peripheral* deviceTwins[] = { &relay, &light };
 
 int main(int argc, char* argv[])
 {
@@ -73,6 +80,7 @@ int main(int argc, char* argv[])
 ///     Reads telemetry and returns the data as a JSON object.
 /// </summary>
 static int ReadTelemetry(char eventBuffer[], size_t len) {
+	static int msgId = 0;
 	GroveTempHumiSHT31_Read(sht31);
 	float temperature = GroveTempHumiSHT31_GetTemperature(sht31);
 	float humidity = GroveTempHumiSHT31_GetHumidity(sht31);
@@ -108,7 +116,9 @@ static int StartTimer(Timer* timer) {
 	return 0;
 }
 
-static void InterCoreCallBack(char * msg) {
+static void InterCoreCallBack(char* msg) {
+	static int buttonPressCount = 0;
+
 	const struct timespec sleepTime = { 0, 100000000L };
 	if (relay.twinState) {
 		GPIO_SetValue(relay.fd, GPIO_Value_Low);
@@ -125,6 +135,9 @@ static void InterCoreCallBack(char * msg) {
 	else {
 		GPIO_SetValue(relay.fd, GPIO_Value_Low);
 	}
+
+	static const char* EventMsgTemplate = "{ \"ButtonPressed\": %d }";
+	snprintf(msgBuffer, JSON_MESSAGE_BYTES, EventMsgTemplate, ++buttonPressCount);
 }
 
 /// <summary>
@@ -148,16 +161,18 @@ static int InitPeripheralsAndHandlers(void)
 	OpenPeripheral(&relay);
 	OpenPeripheral(&light);
 
+	InitDeviceTwins(deviceTwins, NELEMS(deviceTwins));
+
 	// Initialize Grove Shield and Grove Temperature and Humidity Sensor
 	GroveShield_Initialize(&i2cFd, 115200);
 	sht31 = GroveTempHumiSHT31_Open(i2cFd);
 
-	InitInterCoreComms(InterCoreCallBack);  // Initialize Inter Core Communications
-	SendMessageToRTCore(sockFd); // Prime RT Core with Component ID Signature
+	InitInterCoreComms(epollFd, rtAppComponentId, InterCoreCallBack);  // Initialize Inter Core Communications
+	SendMessageToRTCore(); // Prime RT Core with Component ID Signature
 
 	// Start various timers
 	StartTimer(&iotClientDoWork);
-	StartTimer(&iotClientMeasureSensor);
+	StartTimer(&measureSensor);
 	StartTimer(&rtCoreHeatBeat);
 
 	return 0;
@@ -172,7 +187,7 @@ static void ClosePeripheralsAndHandlers(void)
 {
 	Log_Debug("Closing file descriptors\n");
 	CloseFdAndPrintError(iotClientDoWork.fd, iotClientDoWork.name);
-	CloseFdAndPrintError(iotClientMeasureSensor.fd, iotClientMeasureSensor.name);
+	CloseFdAndPrintError(measureSensor.fd, measureSensor.name);
 	CloseFdAndPrintError(rtCoreHeatBeat.fd, rtCoreHeatBeat.name);
 	CloseFdAndPrintError(sending.fd, sending.twinProperty);
 	CloseFdAndPrintError(relay.fd, relay.twinProperty);
@@ -181,65 +196,26 @@ static void ClosePeripheralsAndHandlers(void)
 
 
 /// <summary>
-///     Sends telemetry to Azure IoT Central
-/// </summary>
-static void SendTelemetry(void)
-{
-	preSendTelemtry();
-
-	static char eventBuffer[JSON_MESSAGE_BYTES] = { 0 };
-
-	int len = ReadTelemetry(eventBuffer, sizeof(eventBuffer));
-
-	if (len < 0)
-		return;
-
-	Log_Debug("Sending IoT Hub Message: %s\n", eventBuffer);
-
-	IOTHUB_MESSAGE_HANDLE messageHandle = IoTHubMessage_CreateFromString(eventBuffer);
-
-	if (messageHandle == 0) {
-		Log_Debug("WARNING: unable to create a new IoTHubMessage\n");
-		return;
-	}
-
-	if (IoTHubDeviceClient_LL_SendEventAsync(iothubClientHandle, messageHandle, SendMessageCallback,
-		/*&callback_param*/ 0) != IOTHUB_CLIENT_OK) {
-		Log_Debug("WARNING: failed to hand over the message to IoTHubClient\n");
-	}
-	else {
-		Log_Debug("INFO: IoTHubClient accepted the message for delivery\n");
-	}
-
-	IoTHubMessage_Destroy(messageHandle);
-
-	postSendTelemetry();
-}
-
-
-/// <summary>
 /// Azure timer event:  Check connection status and send telemetry
 /// </summary>
-static void AzureMeasureSensorEventHandler(EventData* eventData)
+static void MeasureSendEventHandler(EventData* eventData)
 {
-	if (ConsumeTimerFdEvent(iotClientMeasureSensor.fd) != 0) {
+	if (ConsumeTimerFdEvent(measureSensor.fd) != 0) {
 		terminationRequired = true;
 		return;
 	}
 
-	bool isNetworkReady = false;
-	if (Networking_IsNetworkingReady(&isNetworkReady) != -1) {
-		if (isNetworkReady && !iothubAuthenticated) {
-			SetupAzureClient(&iotClientMeasureSensor);
-		}
-	}
-	else {
-		Log_Debug("Failed to get Network state\n");
+	memset(msgBuffer, 0, JSON_MESSAGE_BYTES);
+
+	preSendTelemtry();
+
+	if (ReadTelemetry(msgBuffer, JSON_MESSAGE_BYTES) < 0) {
+		return;
 	}
 
-	if (iothubAuthenticated) {
-		SendTelemetry();
-	}
+	SendMsg(msgBuffer);
+
+	postSendTelemetry();
 }
 
 static void TerminationHandler(int signalNumber)
@@ -248,13 +224,10 @@ static void TerminationHandler(int signalNumber)
 	terminationRequired = true;
 }
 
-
-
-
 /// <summary>
 ///     Handle send timer event by writing data to the real-time capable application.
 /// </summary>
-void InterCoreHeartBeat(EventData* eventData)
+static void InterCoreHeartBeat(EventData* eventData)
 {
 	if (ConsumeTimerFdEvent(rtCoreHeatBeat.fd) != 0) {
 		terminationRequired = true;
@@ -262,5 +235,5 @@ void InterCoreHeartBeat(EventData* eventData)
 	}
 
 	//SendToRTCore();
-	SendMessageToRTCore(sockFd);
+	SendMessageToRTCore();
 }

@@ -2,41 +2,18 @@
 
 EventData socketEventData = { .eventHandler = &SocketEventHandler };
 void (*_interCoreCallback)(char*);
-
-void SendEventMsg(IOTHUB_DEVICE_CLIENT_LL_HANDLE iothubClientHandle, bool iothubAuthenticated) {
-	static int buttonPressCount = 0;
-
-	if (iothubAuthenticated) {
-
-		static char eventBuffer[JSON_MESSAGE_BYTES] = { 0 };
-		static const char* EventMsgTemplate = "{ \"ButtonPressed\": %d }";
-
-		snprintf(eventBuffer, JSON_MESSAGE_BYTES, EventMsgTemplate, ++buttonPressCount);
-
-		IOTHUB_MESSAGE_HANDLE messageHandle = IoTHubMessage_CreateFromString(eventBuffer);
-
-		if (messageHandle == 0) {
-			Log_Debug("WARNING: unable to create a new IoTHubMessage\n");
-			return;
-		}
-
-		if (IoTHubDeviceClient_LL_SendEventAsync(iothubClientHandle, messageHandle, NULL,
-			/*&callback_param*/ 0) != IOTHUB_CLIENT_OK) {
-			Log_Debug("WARNING: failed to hand over the message to IoTHubClient\n");
-		}
-		else {
-			Log_Debug("INFO: IoTHubClient accepted the message for delivery\n");
-		}
-
-		IoTHubMessage_Destroy(messageHandle);
-	}
-}
+int sockFd = -1;
 
 
-bool SendMessageToRTCore(int sockFd)
+bool SendMessageToRTCore()
 {
 	static int iter = 0;
 	static char txMessage[32];
+
+	if (sockFd == -1) {
+		Log_Debug("Socket not initialized");
+		return false;
+	}
 
 	sprintf(txMessage, "HeartBeat-%d", iter++);
 
@@ -49,7 +26,7 @@ bool SendMessageToRTCore(int sockFd)
 	return true;
 }
 
-int InitInterCoreComms(void (*interCoreCallback)(char*)) {
+int InitInterCoreComms(int epollFd, const char * rtAppComponentId, void (*interCoreCallback)(char*)) {
 	_interCoreCallback = interCoreCallback;
 	// Open connection to real-time capable application.
 	sockFd = Application_Socket(rtAppComponentId);
@@ -78,20 +55,13 @@ int InitInterCoreComms(void (*interCoreCallback)(char*)) {
 /// </summary>
 void SocketEventHandler(EventData* eventData)
 {
-	if (!ProcessMsg(&relay, sockFd)) {
+	memset(msgBuffer, 0, JSON_MESSAGE_BYTES);
+
+	if (!ProcessMsg()) {
 		terminationRequired = true;
 	}
-
-	//bool isNetworkReady = false;
-	//if (Networking_IsNetworkingReady(&isNetworkReady) != -1) {
-	//	if (isNetworkReady && !iothubAuthenticated) {
-	//		SetupAzureClient(&iotClientMeasureSensor);
-	//	}
-	//}
-
-	if (iothubAuthenticated) {
-		SendEventMsg(iothubClientHandle, iothubAuthenticated);
-	}
+	
+	SendMsg(msgBuffer);
 }
 
 /// <summary>
@@ -99,7 +69,6 @@ void SocketEventHandler(EventData* eventData)
 /// </summary>
 bool ProcessMsg()
 {
-
 	char rxBuf[32];
 	char msg[32];
 	memset(msg, 0, sizeof msg);
@@ -116,7 +85,7 @@ bool ProcessMsg()
 		msg[i] = isprint(rxBuf[i]) ? rxBuf[i] : '.';
 	}
 	Log_Debug(msg);
-
+	
 	_interCoreCallback(msg);
 
 	return true;
