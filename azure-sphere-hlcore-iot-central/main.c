@@ -39,10 +39,10 @@ static Peripheral light = {
 	.twinState = false,
 	.twinProperty = "LightStatus"
 };
-static Peripheral relay = { 
-	.fd = -1, 
+static Peripheral relay = {
+	.fd = -1,
 	.pin = RELAY_PIN,
-	.initialState =  GPIO_Value_Low,
+	.initialState = GPIO_Value_Low,
 	.invertPin = false,
 	.twinState = false,
 	.twinProperty = "RelayStatus"
@@ -58,20 +58,20 @@ static void RtCoreHeartBeat(EventData* eventData);
 static int OpenPeripheral(Peripheral* peripheral);
 static int StartTimer(Timer* timer);
 
-static Timer iotClientDoWork = { 
-	.eventData = {.eventHandler = &AzureDoWorkTimerEventHandler }, 
-	.period = { 1, 0 }, 
-	.name = "DoWork" 
+static Timer iotClientDoWork = {
+	.eventData = {.eventHandler = &AzureDoWorkTimerEventHandler },
+	.period = { 1, 0 },
+	.name = "DoWork"
 };
-static Timer measureSensor = { 
-	.eventData = {.eventHandler = &MeasureSendEventHandler }, 
-	.period = { 10, 0 }, 
-	.name = "MeasureSensor" 
+static Timer measureSensor = {
+	.eventData = {.eventHandler = &MeasureSendEventHandler },
+	.period = { 10, 0 },
+	.name = "MeasureSensor"
 };
-static Timer rtCoreHeatBeat = { 
-	.eventData = {.eventHandler = &RtCoreHeartBeat }, 
-	.period = { 30, 0 }, 
-	.name = "rtCoreSend" 
+static Timer rtCoreHeatBeat = {
+	.eventData = {.eventHandler = &RtCoreHeartBeat },
+	.period = { 30, 0 },
+	.name = "rtCoreSend"
 };
 
 Peripheral* deviceTwins[] = { &relay, &light };
@@ -202,7 +202,7 @@ static int InitPeripheralsAndHandlers(void)
 	sht31 = GroveTempHumiSHT31_Open(i2cFd);
 
 	InitInterCoreComms(epollFd, rtAppComponentId, InterCoreCallBack);  // Initialize Inter Core Communications
-	SendMessageToRTCore("Heart Beat"); // Prime RT Core with Component ID Signature
+	SendMessageToRTCore("HeartBeat"); // Prime RT Core with Component ID Signature
 
 	// Start various timers
 	StartTimer(&iotClientDoWork);
