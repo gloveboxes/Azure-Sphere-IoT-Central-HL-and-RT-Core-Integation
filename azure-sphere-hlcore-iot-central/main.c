@@ -17,7 +17,6 @@
 
 static char msgBuffer[JSON_MESSAGE_BYTES] = { 0 };
 static char rtAppComponentId[RT_APP_COMPONENT_LENGTH];  //initialized from cmdline argument
-//static const char* rtAppComponentId = "6583cf17-d321-4d72-8283-0b7c5b56442b";
 
 static int epollFd = -1;
 static int i2cFd;
