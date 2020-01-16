@@ -51,11 +51,12 @@ static Peripheral relay = {
 static void TerminationHandler(int signalNumber);
 static int InitPeripheralsAndHandlers(void);
 static void ClosePeripheralsAndHandlers(void);
-static void InterCoreCallBack(char* msg);
+static void InterCoreHandler(char* msg);
 static void MeasureSendEventHandler(EventData* eventData);
 static void RtCoreHeartBeat(EventData* eventData);
 static int OpenPeripheral(Peripheral* peripheral);
 static int StartTimer(Timer* timer);
+static void DeviceTwinHandler(JSON_Object* json, Peripheral* peripheral);
 
 static Timer iotClientDoWork = {
 	.eventData = {.eventHandler = &AzureDoWorkTimerEventHandler },
@@ -149,7 +150,7 @@ static void MeasureSendEventHandler(EventData* eventData)
 	postSendTelemetry();
 }
 
-static void InterCoreCallBack(char* msg) {
+static void InterCoreHandler(char* msg) {
 	static int buttonPressCount = 0;
 
 	const struct timespec sleepTime = { 0, 100000000L };
@@ -174,6 +175,16 @@ static void InterCoreCallBack(char* msg) {
 	}
 }
 
+static void DeviceTwinHandler(JSON_Object* json, Peripheral* peripheral) {
+	peripheral->twinState = (bool)json_object_get_boolean(json, "value");
+	if (peripheral->invertPin) {
+		GPIO_SetValue(peripheral->fd, (peripheral->twinState == true ? GPIO_Value_Low : GPIO_Value_High));
+	}
+	else {
+		GPIO_SetValue(peripheral->fd, (peripheral->twinState == true ? GPIO_Value_High : GPIO_Value_Low));
+	}
+}
+
 /// <summary>
 ///     Set up SIGTERM termination handler, initialize peripherals, and set up event handlers.
 /// </summary>
@@ -194,13 +205,13 @@ static int InitPeripheralsAndHandlers(void)
 	OpenPeripheral(&relay);
 	OpenPeripheral(&light);
 
-	InitDeviceTwins(deviceTwins, NELEMS(deviceTwins));
+	InitDeviceTwins(deviceTwins, NELEMS(deviceTwins), DeviceTwinHandler);
 
 	// Initialize Grove Shield and Grove Temperature and Humidity Sensor
 	GroveShield_Initialize(&i2cFd, 115200);
 	sht31 = GroveTempHumiSHT31_Open(i2cFd);
 
-	InitInterCoreComms(epollFd, rtAppComponentId, InterCoreCallBack);  // Initialize Inter Core Communications
+	InitInterCoreComms(epollFd, rtAppComponentId, InterCoreHandler);  // Initialize Inter Core Communications
 	SendMessageToRTCore("HeartBeat"); // Prime RT Core with Component ID Signature
 
 	// Start various timers

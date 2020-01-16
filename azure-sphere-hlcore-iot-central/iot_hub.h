@@ -30,7 +30,14 @@ void TwinCallback(DEVICE_TWIN_UPDATE_STATE updateState, const unsigned char* pay
 void SetDesiredState(JSON_Object* desiredProperties, Peripheral* peripheral);
 void TwinReportState(const char* propertyName, bool propertyValue);
 void ReportStatusCallback(int result, void* context);
-void InitDeviceTwins(Peripheral* deviceTwins[], size_t deviceTwinCount);
+void InitDeviceTwins(Peripheral* deviceTwins[], size_t deviceTwinCount, void (*DeviceTwinHandler)(JSON_Object* json, Peripheral* peripheral));
+
+#pragma endregion
+
+#pragma region Direct Methods
+
+int AzureDirectMethodHandler(const char* method_name, const unsigned char* payload, size_t payloadSize,
+	unsigned char** responsePayload, size_t* responsePayloadSize, void* userContextCallback);
 
 #pragma endregion
 

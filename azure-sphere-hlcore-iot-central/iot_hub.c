@@ -3,6 +3,7 @@
 IOTHUB_DEVICE_CLIENT_LL_HANDLE iothubClientHandle = NULL;
 Peripheral** _deviceTwins = NULL;
 size_t _deviceTwinCount = 0;
+void (*_deviceTwinHandler)(JSON_Object* json, Peripheral* peripheral);
 bool iothubAuthenticated = false;
 const int keepalivePeriodSeconds = 20;
 
@@ -96,7 +97,7 @@ bool SetupAzureClient()
 	}
 
 	IoTHubDeviceClient_LL_SetDeviceTwinCallback(iothubClientHandle, TwinCallback, NULL);
-	//IoTHubDeviceClient_LL_SetDeviceMethodCallback(iothubClientHandle, AzureDirectMethodHandler, NULL);
+	IoTHubDeviceClient_LL_SetDeviceMethodCallback(iothubClientHandle, AzureDirectMethodHandler, NULL);
 	IoTHubDeviceClient_LL_SetConnectionStatusCallback(iothubClientHandle, HubConnectionStatusCallback, NULL);
 
 	return true;
@@ -171,9 +172,10 @@ const char* GetReasonString(IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason)
 
 #pragma region Device Twins
 
-void InitDeviceTwins(Peripheral* deviceTwins[], size_t deviceTwinCount) {
+void InitDeviceTwins(Peripheral* deviceTwins[], size_t deviceTwinCount, void (*deviceTwinHandler)(JSON_Object* json, Peripheral* peripheral)) {
 	_deviceTwins = deviceTwins;
 	_deviceTwinCount = deviceTwinCount;
+	_deviceTwinHandler = deviceTwinHandler;
 }
 
 
@@ -217,9 +219,6 @@ void TwinCallback(DEVICE_TWIN_UPDATE_STATE updateState, const unsigned char* pay
 		SetDesiredState(desiredProperties, _deviceTwins[i]);
 	}
 
-	//SetDesiredState(desiredProperties, &relay);
-	//SetDesiredState(desiredProperties, &light);
-
 cleanup:
 	// Release the allocated memory.
 	if (root_value != NULL) {
@@ -231,13 +230,7 @@ cleanup:
 void SetDesiredState(JSON_Object* desiredProperties, Peripheral* peripheral) {
 	JSON_Object* jsonObject = json_object_dotget_object(desiredProperties, peripheral->twinProperty);
 	if (jsonObject != NULL) {
-		peripheral->twinState = (bool)json_object_get_boolean(jsonObject, "value");
-		if (peripheral->invertPin) {
-			GPIO_SetValue(peripheral->fd, (peripheral->twinState == true ? GPIO_Value_Low : GPIO_Value_High));
-		}
-		else {
-			GPIO_SetValue(peripheral->fd, (peripheral->twinState == true ? GPIO_Value_High : GPIO_Value_Low));
-		}
+		_deviceTwinHandler(jsonObject, peripheral);
 		TwinReportState(peripheral->twinProperty, peripheral->twinState);
 	}
 }
@@ -273,6 +266,78 @@ void TwinReportState(const char* propertyName, bool propertyValue)
 void ReportStatusCallback(int result, void* context)
 {
 	Log_Debug("INFO: Device Twin reported properties update result: HTTP status code %d\n", result);
+}
+
+#pragma endregion
+
+
+#pragma region Direct Methods
+
+int AzureDirectMethodHandler(const char* method_name, const unsigned char* payload, size_t payloadSize,
+	unsigned char** responsePayload, size_t* responsePayloadSize, void* userContextCallback) {
+
+	const char* onSuccess = "\"Successfully invoke device method\"";
+	const char* notFound = "\"No method found\"";
+
+	const char* responseMessage = onSuccess;
+	int result = 200;
+	JSON_Value* root_value = NULL;
+	JSON_Object* root_object = NULL;
+
+	// Prepare the payload for the response. This is a heap allocated null terminated string.
+	// The Azure IoT Hub SDK is responsible of freeing it.
+	*responsePayload = NULL;  // Response payload content.
+	*responsePayloadSize = 0; // Response payload content size.
+
+	char* payLoadString = (char*)malloc(payloadSize + 1);
+	if (payLoadString == NULL) {
+		responseMessage = "payload memory failed";
+		result = 500;
+		goto cleanup;
+	}
+
+	memcpy(payLoadString, payload, payloadSize);
+	payLoadString[payloadSize] = 0; //null terminate string
+
+	root_value = json_parse_string(payLoadString);
+	if (root_value == NULL) {
+		responseMessage = "Invalid JSON";
+		result = 500;
+		goto cleanup;
+	}
+
+	root_object = json_value_get_object(root_value);
+	if (root_object == NULL) {
+		responseMessage = "Invalid JSON";
+		result = 500;
+		goto cleanup;
+	}
+
+	if (strcmp(method_name, "fanspeed") == 0)
+	{
+		int speed = (int)json_object_get_number(root_object, "speed");
+		Log_Debug("Set fan speed %d", speed);
+	}
+	else
+	{
+		responseMessage = notFound;
+		result = 404;
+	}
+
+cleanup:
+
+	// Prepare the payload for the response. This is a heap allocated null terminated string.
+	// The Azure IoT Hub SDK is responsible of freeing it.
+	*responsePayloadSize = strlen(responseMessage);
+	*responsePayload = (unsigned char*)malloc(*responsePayloadSize);
+	strncpy((char*)(*responsePayload), responseMessage, *responsePayloadSize);
+
+	if (root_value != NULL) {
+		json_value_free(root_value);
+	}
+	free(payLoadString);
+
+	return result;
 }
 
 #pragma endregion
