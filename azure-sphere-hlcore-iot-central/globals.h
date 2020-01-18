@@ -5,6 +5,7 @@
 #include <applibs/gpio.h>
 #include <signal.h>
 #include <stdbool.h>
+#include "parson.h"
 
 #define SCOPEID_LENGTH 20
 #define RT_APP_COMPONENT_LENGTH 36 + 1  // GUID 36 Char + 1 NULL terminate)
@@ -14,14 +15,29 @@ extern char scopeId[SCOPEID_LENGTH]; // ScopeId for the Azure IoT Central applic
 
 extern volatile sig_atomic_t terminationRequired;
 
-typedef struct {
+struct _peripheral {
 	int fd;
-	int pin;
+	unsigned char pin;
 	GPIO_Value initialState;
 	bool invertPin;
+	void (*initialise)(struct _peripheral* peripheral);
+	char* name;
+};
+
+typedef struct _peripheral Peripheral;
+
+typedef struct {
+	Peripheral peripheral;
 	bool twinState;
 	const char* twinProperty;
-} Peripheral;
+	void (*handler)(JSON_Object* json, Peripheral* peripheral);
+} DeviceTwinPeripheral;
+
+typedef struct {
+	Peripheral peripheral;
+	const char* methodName;
+	void (*handler)(JSON_Object* json, Peripheral* peripheral);
+} DirectMethodPeripheral;
 
 typedef struct {
 	EventData eventData;

@@ -1,9 +1,8 @@
 #include "iot_hub.h"
 
 IOTHUB_DEVICE_CLIENT_LL_HANDLE iothubClientHandle = NULL;
-Peripheral** _deviceTwins = NULL;
+DeviceTwinPeripheral** _deviceTwins = NULL;
 size_t _deviceTwinCount = 0;
-void (*_deviceTwinHandler)(JSON_Object* json, Peripheral* peripheral);
 bool iothubAuthenticated = false;
 const int keepalivePeriodSeconds = 20;
 
@@ -172,10 +171,9 @@ const char* GetReasonString(IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason)
 
 #pragma region Device Twins
 
-void InitDeviceTwins(Peripheral* deviceTwins[], size_t deviceTwinCount, void (*deviceTwinHandler)(JSON_Object* json, Peripheral* peripheral)) {
+void InitDeviceTwins(DeviceTwinPeripheral* deviceTwins[], size_t deviceTwinCount) {
 	_deviceTwins = deviceTwins;
 	_deviceTwinCount = deviceTwinCount;
-	_deviceTwinHandler = deviceTwinHandler;
 }
 
 
@@ -227,11 +225,11 @@ cleanup:
 	free(payLoadString);
 }
 
-void SetDesiredState(JSON_Object* desiredProperties, Peripheral* peripheral) {
-	JSON_Object* jsonObject = json_object_dotget_object(desiredProperties, peripheral->twinProperty);
+void SetDesiredState(JSON_Object* desiredProperties, DeviceTwinPeripheral* deviceTwinPeripheral) {
+	JSON_Object* jsonObject = json_object_dotget_object(desiredProperties, deviceTwinPeripheral->twinProperty);
 	if (jsonObject != NULL) {
-		_deviceTwinHandler(jsonObject, peripheral);
-		TwinReportState(peripheral->twinProperty, peripheral->twinState);
+		deviceTwinPeripheral->handler(jsonObject, deviceTwinPeripheral);
+		TwinReportState(deviceTwinPeripheral->twinProperty, deviceTwinPeripheral->twinState);
 	}
 }
 

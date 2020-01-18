@@ -27,10 +27,10 @@ void AzureDoWorkTimerEventHandler(EventData*);
 #pragma region Device Twins
 
 void TwinCallback(DEVICE_TWIN_UPDATE_STATE updateState, const unsigned char* payload, size_t payloadSize, void* userContextCallback);
-void SetDesiredState(JSON_Object* desiredProperties, Peripheral* peripheral);
+void SetDesiredState(JSON_Object* desiredProperties, DeviceTwinPeripheral* deviceTwinPeripheral);
 void TwinReportState(const char* propertyName, bool propertyValue);
 void ReportStatusCallback(int result, void* context);
-void InitDeviceTwins(Peripheral* deviceTwins[], size_t deviceTwinCount, void (*DeviceTwinHandler)(JSON_Object* json, Peripheral* peripheral));
+void InitDeviceTwins(DeviceTwinPeripheral* deviceTwins[], size_t deviceTwinCount);
 
 #pragma endregion
 

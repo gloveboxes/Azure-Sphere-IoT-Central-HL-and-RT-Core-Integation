@@ -22,30 +22,7 @@ static int epollFd = -1;
 static int i2cFd;
 static void* sht31;
 
-static Peripheral sendStatus = {
-	.fd = -1,
-	.pin = SEND_STATUS_PIN,
-	.initialState = GPIO_Value_High,
-	.invertPin = true,
-	.twinState = false,
-	.twinProperty = "SendStatus"
-};
-static Peripheral light = {
-	.fd = -1,
-	.pin = LIGHT_PIN,
-	.initialState = GPIO_Value_High,
-	.invertPin = true,
-	.twinState = false,
-	.twinProperty = "LightStatus"
-};
-static Peripheral relay = {
-	.fd = -1,
-	.pin = RELAY_PIN,
-	.initialState = GPIO_Value_Low,
-	.invertPin = false,
-	.twinState = false,
-	.twinProperty = "RelayStatus"
-};
+static void FanSpeedHandler(JSON_Object* json);
 
 // Forward signatures
 static void TerminationHandler(int signalNumber);
@@ -56,7 +33,30 @@ static void MeasureSendEventHandler(EventData* eventData);
 static void RtCoreHeartBeat(EventData* eventData);
 static int OpenPeripheral(Peripheral* peripheral);
 static int StartTimer(Timer* timer);
-static void DeviceTwinHandler(JSON_Object* json, Peripheral* peripheral);
+static void DeviceTwinHandler(JSON_Object* json, DeviceTwinPeripheral* deviceTwinPeripheral);
+
+static DeviceTwinPeripheral relay = {
+	.peripheral = {.fd = -1, .pin = RELAY_PIN, .initialState = GPIO_Value_Low, .invertPin = false, .initialise = OpenPeripheral, .name = "Relay" },
+	.twinState = false,
+	.twinProperty = "RelayStatus",
+	.handler = DeviceTwinHandler
+};
+
+static DeviceTwinPeripheral light = {
+	.peripheral = {.fd = -1, .pin = LIGHT_PIN, .initialState = GPIO_Value_High, .invertPin = true, .initialise = OpenPeripheral, .name = "Light" },
+	.twinState = false,
+	.twinProperty = "LightStatus",
+	.handler = DeviceTwinHandler
+};
+
+static Peripheral sendStatus = {
+	.fd = -1,
+	.pin = SEND_STATUS_PIN,
+	.initialState = GPIO_Value_High,
+	.invertPin = true,
+	.initialise = OpenPeripheral,
+	.name = "SendStatus"
+};
 
 static Timer iotClientDoWork = {
 	.eventData = {.eventHandler = &AzureDoWorkTimerEventHandler },
@@ -74,7 +74,7 @@ static Timer rtCoreHeatBeat = {
 	.name = "rtCoreSend"
 };
 
-Peripheral* deviceTwins[] = { &relay, &light };
+DeviceTwinPeripheral* deviceTwins[] = { &relay, &light };
 
 int main(int argc, char* argv[])
 {
@@ -155,19 +155,19 @@ static void InterCoreHandler(char* msg) {
 
 	const struct timespec sleepTime = { 0, 100000000L };
 	if (relay.twinState) {
-		GPIO_SetValue(relay.fd, GPIO_Value_Low);
+		GPIO_SetValue(relay.peripheral.fd, GPIO_Value_Low);
 	}
 	else {
-		GPIO_SetValue(relay.fd, GPIO_Value_High);
+		GPIO_SetValue(relay.peripheral.fd, GPIO_Value_High);
 	}
 
 	nanosleep(&sleepTime, NULL);
 
 	if (relay.twinState) {
-		GPIO_SetValue(relay.fd, GPIO_Value_High);
+		GPIO_SetValue(relay.peripheral.fd, GPIO_Value_High);
 	}
 	else {
-		GPIO_SetValue(relay.fd, GPIO_Value_Low);
+		GPIO_SetValue(relay.peripheral.fd, GPIO_Value_Low);
 	}
 
 	if (snprintf(msgBuffer, JSON_MESSAGE_BYTES, "{ \"ButtonPressed\": %d }", ++buttonPressCount) > 0) {
@@ -175,14 +175,18 @@ static void InterCoreHandler(char* msg) {
 	}
 }
 
-static void DeviceTwinHandler(JSON_Object* json, Peripheral* peripheral) {
-	peripheral->twinState = (bool)json_object_get_boolean(json, "value");
-	if (peripheral->invertPin) {
-		GPIO_SetValue(peripheral->fd, (peripheral->twinState == true ? GPIO_Value_Low : GPIO_Value_High));
+static void DeviceTwinHandler(JSON_Object* json, DeviceTwinPeripheral* deviceTwinPeripheral) {
+	deviceTwinPeripheral->twinState = (bool)json_object_get_boolean(json, "value");
+	if (deviceTwinPeripheral->peripheral.invertPin) {
+		GPIO_SetValue(deviceTwinPeripheral->peripheral.fd, (deviceTwinPeripheral->twinState == true ? GPIO_Value_Low : GPIO_Value_High));
 	}
 	else {
-		GPIO_SetValue(peripheral->fd, (peripheral->twinState == true ? GPIO_Value_High : GPIO_Value_Low));
+		GPIO_SetValue(deviceTwinPeripheral->peripheral.fd, (deviceTwinPeripheral->twinState == true ? GPIO_Value_High : GPIO_Value_Low));
 	}
+}
+
+static void FanSpeedHandler(JSON_Object* json) {
+
 }
 
 /// <summary>
@@ -201,11 +205,11 @@ static int InitPeripheralsAndHandlers(void)
 		return -1;
 	}
 
-	OpenPeripheral(&sendStatus);
-	OpenPeripheral(&relay);
-	OpenPeripheral(&light);
+	sendStatus.initialise(&sendStatus);
+	relay.peripheral.initialise(&relay.peripheral);
+	light.peripheral.initialise(&light.peripheral);
 
-	InitDeviceTwins(deviceTwins, NELEMS(deviceTwins), DeviceTwinHandler);
+	InitDeviceTwins(deviceTwins, NELEMS(deviceTwins));
 
 	// Initialize Grove Shield and Grove Temperature and Humidity Sensor
 	GroveShield_Initialize(&i2cFd, 115200);
@@ -250,8 +254,9 @@ static void ClosePeripheralsAndHandlers(void)
 	CloseFdAndPrintError(iotClientDoWork.fd, iotClientDoWork.name);
 	CloseFdAndPrintError(measureSensor.fd, measureSensor.name);
 	CloseFdAndPrintError(rtCoreHeatBeat.fd, rtCoreHeatBeat.name);
-	CloseFdAndPrintError(sendStatus.fd, sendStatus.twinProperty);
-	CloseFdAndPrintError(relay.fd, relay.twinProperty);
+	CloseFdAndPrintError(sendStatus.fd, sendStatus.name);
+	CloseFdAndPrintError(relay.peripheral.fd, relay.peripheral.name);
+	CloseFdAndPrintError(light.peripheral.fd, light.peripheral.name);
 	CloseFdAndPrintError(epollFd, "Epoll");
 }
 
