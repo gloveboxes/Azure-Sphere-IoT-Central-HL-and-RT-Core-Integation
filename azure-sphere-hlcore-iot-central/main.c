@@ -13,6 +13,7 @@
 #define SEND_STATUS_PIN 19
 #define LIGHT_PIN 21
 #define RELAY_PIN 0
+#define FAN_PIN 4
 #define JSON_MESSAGE_BYTES 100  // Number of bytes to allocate for the JSON telemetry message for IoT Central
 
 static char msgBuffer[JSON_MESSAGE_BYTES] = { 0 };
@@ -21,8 +22,6 @@ static char rtAppComponentId[RT_APP_COMPONENT_LENGTH];  //initialized from cmdli
 static int epollFd = -1;
 static int i2cFd;
 static void* sht31;
-
-static void FanSpeedHandler(JSON_Object* json);
 
 // Forward signatures
 static void TerminationHandler(int signalNumber);
@@ -34,6 +33,8 @@ static void RtCoreHeartBeat(EventData* eventData);
 static int OpenPeripheral(Peripheral* peripheral);
 static int StartTimer(Timer* timer);
 static void DeviceTwinHandler(JSON_Object* json, DeviceTwinPeripheral* deviceTwinPeripheral);
+static void SetFanSpeed(JSON_Object* json, Peripheral* peripheral);
+static int InitFanPWM(struct _peripheral* peripheral);
 
 static DeviceTwinPeripheral relay = {
 	.peripheral = {.fd = -1, .pin = RELAY_PIN, .initialState = GPIO_Value_Low, .invertPin = false, .initialise = OpenPeripheral, .name = "Relay" },
@@ -49,13 +50,14 @@ static DeviceTwinPeripheral light = {
 	.handler = DeviceTwinHandler
 };
 
-static Peripheral sendStatus = {
-	.fd = -1,
-	.pin = SEND_STATUS_PIN,
-	.initialState = GPIO_Value_High,
-	.invertPin = true,
-	.initialise = OpenPeripheral,
-	.name = "SendStatus"
+static DirectMethodPeripheral fan = {
+	.peripheral = {.fd = -1, .pin = FAN_PIN, .initialState = GPIO_Value_Low, .invertPin = false, .initialise = InitFanPWM, .name = "Fan" },
+	.methodName = "FanSpeed",
+	.handler = SetFanSpeed
+};
+
+static ActuatorPeripheral sendStatus = {
+	.peripheral = {.fd = -1, .pin = SEND_STATUS_PIN, .initialState = GPIO_Value_High, .invertPin = true, .initialise = OpenPeripheral, .name = "SendStatus" }
 };
 
 static Timer iotClientDoWork = {
@@ -124,11 +126,11 @@ static int ReadTelemetry(char eventBuffer[], size_t len) {
 }
 
 static void preSendTelemtry(void) {
-	GPIO_SetValue(sendStatus.fd, GPIO_Value_Low);
+	GPIO_SetValue(sendStatus.peripheral.fd, GPIO_Value_Low);
 }
 
 static void postSendTelemetry(void) {
-	GPIO_SetValue(sendStatus.fd, GPIO_Value_High);
+	GPIO_SetValue(sendStatus.peripheral.fd, GPIO_Value_High);
 }
 
 /// <summary>
@@ -185,10 +187,6 @@ static void DeviceTwinHandler(JSON_Object* json, DeviceTwinPeripheral* deviceTwi
 	}
 }
 
-static void FanSpeedHandler(JSON_Object* json) {
-
-}
-
 /// <summary>
 ///     Set up SIGTERM termination handler, initialize peripherals, and set up event handlers.
 /// </summary>
@@ -205,9 +203,14 @@ static int InitPeripheralsAndHandlers(void)
 		return -1;
 	}
 
-	sendStatus.initialise(&sendStatus);
-	relay.peripheral.initialise(&relay.peripheral);
-	light.peripheral.initialise(&light.peripheral);
+	//sendStatus.initialise(&sendStatus);
+	INIT_PERIPHERAL(sendStatus);
+	INIT_PERIPHERAL(relay);
+	INIT_PERIPHERAL(light);
+	INIT_PERIPHERAL(fan);
+	//relay.peripheral.initialise(&relay.peripheral);
+	//light.peripheral.initialise(&light.peripheral);
+	//fan.peripheral.initialise(&fan.peripheral);
 
 	InitDeviceTwins(deviceTwins, NELEMS(deviceTwins));
 
@@ -224,6 +227,15 @@ static int InitPeripheralsAndHandlers(void)
 	StartTimer(&rtCoreHeatBeat);
 
 	return 0;
+}
+
+static int InitFanPWM(struct _peripheral* peripheral) {
+	return 0;
+}
+
+
+static void SetFanSpeed(JSON_Object* json, Peripheral* peripheral) {
+
 }
 
 static int OpenPeripheral(Peripheral* peripheral) {
@@ -254,9 +266,10 @@ static void ClosePeripheralsAndHandlers(void)
 	CloseFdAndPrintError(iotClientDoWork.fd, iotClientDoWork.name);
 	CloseFdAndPrintError(measureSensor.fd, measureSensor.name);
 	CloseFdAndPrintError(rtCoreHeatBeat.fd, rtCoreHeatBeat.name);
-	CloseFdAndPrintError(sendStatus.fd, sendStatus.name);
+	CloseFdAndPrintError(sendStatus.peripheral.fd, sendStatus.peripheral.name);
 	CloseFdAndPrintError(relay.peripheral.fd, relay.peripheral.name);
 	CloseFdAndPrintError(light.peripheral.fd, light.peripheral.name);
+	CloseFdAndPrintError(fan.peripheral.fd, fan.peripheral.name);
 	CloseFdAndPrintError(epollFd, "Epoll");
 }
 
