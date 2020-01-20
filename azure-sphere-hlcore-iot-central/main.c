@@ -76,7 +76,7 @@ static Timer rtCoreHeatBeat = {
 	.name = "rtCoreSend"
 };
 
-#pragma region define sets
+#pragma region define sets for auto initialisation and close
 
 DeviceTwinPeripheral* deviceTwinDevices[] = { &relay, &light };
 DirectMethodPeripheral* directMethodDevices[] = { &fan };
@@ -229,10 +229,25 @@ static int InitPeripheralsAndHandlers(void)
 	return 0;
 }
 
+/// <summary>
+///     Close peripherals and handlers.
+/// </summary>
+static void ClosePeripheralsAndHandlers(void)
+{
+	Log_Debug("Closing file descriptors\n");
+
+	STOP_TIMERS(timers);
+
+	CLOSE_PERIPHERAL_SET(actuatorDevices);
+	CLOSE_PERIPHERAL_SET(deviceTwinDevices);
+	CLOSE_PERIPHERAL_SET(directMethodDevices);
+
+	CloseFdAndPrintError(epollFd, "Epoll");
+}
+
 static int InitFanPWM(struct _peripheral* peripheral) {
 	return 0;
 }
-
 
 static void SetFanSpeed(JSON_Object* json, Peripheral* peripheral) {
 
@@ -255,22 +270,6 @@ static int StartTimer(Timer* timer) {
 		return -1;
 	}
 	return 0;
-}
-
-/// <summary>
-///     Close peripherals and handlers.
-/// </summary>
-static void ClosePeripheralsAndHandlers(void)
-{
-	Log_Debug("Closing file descriptors\n");
-
-	STOP_TIMERS(timers);
-
-	CLOSE_PERIPHERAL_SET(actuatorDevices);
-	CLOSE_PERIPHERAL_SET(deviceTwinDevices);
-	CLOSE_PERIPHERAL_SET(directMethodDevices);
-
-	CloseFdAndPrintError(epollFd, "Epoll");
 }
 
 

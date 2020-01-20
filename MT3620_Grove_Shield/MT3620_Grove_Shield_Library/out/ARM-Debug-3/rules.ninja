@@ -17,7 +17,7 @@
 rule C_COMPILER__MT3620_Grove_Shield_Library
   depfile = $DEP_FILE
   deps = gcc
-  command = C:\PROGRA~2\MI3C21~1\Sysroots\3\tools\gcc\ARFCD8~1.EXE $DEFINES $INCLUDES $FLAGS -o $out   -c $in
+  command = "C:\PROGRA~2\Microsoft Azure Sphere SDK\Sysroots\3\tools\gcc\arm-poky-linux-musleabi-gcc.exe" $DEFINES $INCLUDES $FLAGS -o $out   -c $in
   description = Building C object $out
 
 
@@ -25,7 +25,7 @@ rule C_COMPILER__MT3620_Grove_Shield_Library
 # Rule for linking C static library.
 
 rule C_STATIC_LIBRARY_LINKER__MT3620_Grove_Shield_Library
-  command = cmd.exe /C "$PRE_LINK && "C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E remove $TARGET_FILE && C:\PROGRA~2\MI3C21~1\Sysroots\3\tools\gcc\ARM-PO~2.EXE qc $TARGET_FILE $LINK_FLAGS $in && C:\PROGRA~2\MI3C21~1\Sysroots\3\tools\gcc\ranlib.exe $TARGET_FILE && $POST_BUILD"
+  command = cmd.exe /C "$PRE_LINK && "C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E remove $TARGET_FILE && "C:\PROGRA~2\Microsoft Azure Sphere SDK\Sysroots\3\tools\gcc\arm-poky-linux-musleabi-ar.exe" qc $TARGET_FILE $LINK_FLAGS $in && "C:\PROGRA~2\Microsoft Azure Sphere SDK\Sysroots\3\tools\gcc\ranlib.exe" $TARGET_FILE && $POST_BUILD"
   description = Linking C static library $TARGET_FILE
   restat = $RESTAT
 
@@ -42,7 +42,7 @@ rule CUSTOM_COMMAND
 # Rule for re-running cmake.
 
 rule RERUN_CMAKE
-  command = "C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -SC:\Data\GitHub\azure-sphere\sdk-19-11\MT3620_Grove_Shield\MT3620_Grove_Shield_Library -BC:\Data\GitHub\azure-sphere\sdk-19-11\MT3620_Grove_Shield\MT3620_Grove_Shield_Library\out\ARM-Debug-3
+  command = "C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -SC:\Data\GitHub\AzureSphere\Azure-Sphere-IoT-Central-HL-and-RT-Core-Integation\MT3620_Grove_Shield\MT3620_Grove_Shield_Library -BC:\Data\GitHub\AzureSphere\Azure-Sphere-IoT-Central-HL-and-RT-Core-Integation\MT3620_Grove_Shield\MT3620_Grove_Shield_Library\out\ARM-Debug-3
   description = Re-running CMake...
   generator = 1
 
