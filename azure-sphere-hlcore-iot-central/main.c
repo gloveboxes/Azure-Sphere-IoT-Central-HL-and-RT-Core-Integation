@@ -76,7 +76,15 @@ static Timer rtCoreHeatBeat = {
 	.name = "rtCoreSend"
 };
 
-DeviceTwinPeripheral* deviceTwins[] = { &relay, &light };
+#pragma region define sets
+
+DeviceTwinPeripheral* deviceTwinDevices[] = { &relay, &light };
+DirectMethodPeripheral* directMethodDevices[] = { &fan };
+ActuatorPeripheral* actuatorDevices[] = { &sendStatus };
+Timer* timers[] = { &iotClientDoWork, &measureSensor, &rtCoreHeatBeat };
+
+#pragma endregion
+
 
 int main(int argc, char* argv[])
 {
@@ -203,16 +211,11 @@ static int InitPeripheralsAndHandlers(void)
 		return -1;
 	}
 
-	//sendStatus.initialise(&sendStatus);
-	INIT_PERIPHERAL(sendStatus);
-	INIT_PERIPHERAL(relay);
-	INIT_PERIPHERAL(light);
-	INIT_PERIPHERAL(fan);
-	//relay.peripheral.initialise(&relay.peripheral);
-	//light.peripheral.initialise(&light.peripheral);
-	//fan.peripheral.initialise(&fan.peripheral);
+	OPEN_PERIPHERAL_SET(actuatorDevices);
+	OPEN_PERIPHERAL_SET(deviceTwinDevices);
+	OPEN_PERIPHERAL_SET(directMethodDevices);
 
-	InitDeviceTwins(deviceTwins, NELEMS(deviceTwins));
+	InitDeviceTwins(deviceTwinDevices, NELEMS(deviceTwinDevices));
 
 	// Initialize Grove Shield and Grove Temperature and Humidity Sensor
 	GroveShield_Initialize(&i2cFd, 115200);
@@ -221,10 +224,7 @@ static int InitPeripheralsAndHandlers(void)
 	InitInterCoreComms(epollFd, rtAppComponentId, InterCoreHandler);  // Initialize Inter Core Communications
 	SendMessageToRTCore("HeartBeat"); // Prime RT Core with Component ID Signature
 
-	// Start various timers
-	StartTimer(&iotClientDoWork);
-	StartTimer(&measureSensor);
-	StartTimer(&rtCoreHeatBeat);
+	START_TIMERS(timers);
 
 	return 0;
 }
@@ -263,13 +263,13 @@ static int StartTimer(Timer* timer) {
 static void ClosePeripheralsAndHandlers(void)
 {
 	Log_Debug("Closing file descriptors\n");
-	CloseFdAndPrintError(iotClientDoWork.fd, iotClientDoWork.name);
-	CloseFdAndPrintError(measureSensor.fd, measureSensor.name);
-	CloseFdAndPrintError(rtCoreHeatBeat.fd, rtCoreHeatBeat.name);
-	CloseFdAndPrintError(sendStatus.peripheral.fd, sendStatus.peripheral.name);
-	CloseFdAndPrintError(relay.peripheral.fd, relay.peripheral.name);
-	CloseFdAndPrintError(light.peripheral.fd, light.peripheral.name);
-	CloseFdAndPrintError(fan.peripheral.fd, fan.peripheral.name);
+
+	STOP_TIMERS(timers);
+
+	CLOSE_PERIPHERAL_SET(actuatorDevices);
+	CLOSE_PERIPHERAL_SET(deviceTwinDevices);
+	CLOSE_PERIPHERAL_SET(directMethodDevices);
+
 	CloseFdAndPrintError(epollFd, "Epoll");
 }
 
