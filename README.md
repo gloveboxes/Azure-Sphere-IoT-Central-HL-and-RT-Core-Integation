@@ -22,14 +22,6 @@ Follow me on Twitter [@dglover](https://twitter.com/dglover)
 2. Integrating existing MCU (FreeRTOS) code with the Internet
 3. Simplifying Device Provisioning
 
-## Learn about Azure Sphere
-
-1. [Azure Sphere Documentation](https://docs.microsoft.com/en-au/azure-sphere/)
-1. Using Yocto to Build an IoT OS Targeting a Crossover SoC. [Video](https://www.youtube.com/watch?v=-T7Et5qfqQQ), and [Slides](https://static.sched.com/hosted_files/ossna19/91/Crossover_ELC2019.pdf)
-2. [Anatomy of a secured MCU](https://azure.microsoft.com/en-au/blog/anatomy-of-a-secured-mcu/)
-3. [Azure Sphere’s customized Linux-based OS](https://azure.microsoft.com/en-au/blog/azure-sphere-s-customized-linux-based-os/)
-4. [Tech Communities Blog](https://techcommunity.microsoft.com/t5/internet-of-things/bg-p/IoTBlog)
-
 ## What you will learn
 
 1. Building an [Azure Sphere](https://azure.microsoft.com/services/azure-sphere/?WT.mc_id=github-blog-dglover) application that integrates with [Azure IoT Central](https://azure.microsoft.com/services/iot-central/?WT.mc_id=github-blog-dglover).
@@ -37,6 +29,16 @@ Follow me on Twitter [@dglover](https://twitter.com/dglover)
 3. Integrating a FreeRTOS real time application running on Azure Sphere with Azure IoT.
 
 If unfamiliar with Azure Sphere development then review the [Create a Secure Azure Sphere App using the Grove Shield Sensor Kit](https://github.com/gloveboxes/Create-a-Secure-Azure-Sphere-App-using-the-Grove-Shield-Sensor-Kit) tutorial before starting this tutorial.
+
+## Azure Sphere Solution Architecture
+
+There are two applications deployed to the Azure Sphere. 
+
+
+1. The first application is a **High Level** *Linux* application running on the **Cortex A7** core. It is responsible for sending temperature and humidity telemetry to Azure IoT Central, processing Digital Twin and Direct Method messages from Azure IoT Central, and finally, passing on event messages from the Real Time core *FreeRTOS* application to Azure IoT Central.
+1. The second is a **Real Time** *FreeRTOS* application running in the **Cortex M4**. It runs a number of FreeRTOS Tasks. The first task is to blink an LED, the second is to monitor for button presses, and the third is to send an **inter-core** message to the **High Level** application when the button is pressed. Note, the FreeRTOS application running on the Real Time core cannot connect directly to the network.
+
+![](resources/azure-sphere-application-architecture.png)
 
 ## What is Azure Sphere
 
@@ -71,11 +73,9 @@ See **[Use Azure IoT with Azure Sphere](https://docs.microsoft.com/en-us/azure-s
 2. Set up Azure IoT Central to work with Azure Sphere
 3. Deploy an Azure IoT Central application to Azure Sphere
 
-## Developer Environment Set Up
+## Developer Environment
 
-You need to set up your development environment, claim your Azure Sphere device, and configure the device network settings.
-
-Review [Overview of set-up procedures](https://docs.microsoft.com/en-gb/azure-sphere/install/overview)
+Follow the [Install for Windows](https://docs.microsoft.com/en-gb/azure-sphere/install/overview) guide, install the Azure Sphere SDK for Visual Studio, claim your device, and configure the Azure Sphere network.
 
 ## Clone the following GitHub Repositories
 
@@ -110,6 +110,11 @@ Applications on the the Azure Sphere are locked down by default. You need to gra
 
 From Visual Studio open the **app_manifest.json** file.
 
+**Observe**:
+
+1. GPIO Capabilities: This application uses two GPIO pins. Pins 10, and 12.
+2. Allowed Application Connections: This is the ID of the High Level application that this application will be partnered with. It is required for inter core communications.
+
 ```json
 {
   "SchemaVersion": 1,
@@ -124,6 +129,20 @@ From Visual Studio open the **app_manifest.json** file.
   "ApplicationType": "RealTimeCapable"
 }
 
+```
+
+### Declaring the Partner Application
+
+In the **launch.js.json** file you need to declare the ID of the High Level Application that this Real Time application will be communicating with. 
+
+```json
+{
+    ...
+    "configurations": [
+        ...
+        "partnerComponents": [ "25025d2c-66da-4448-bae1-ac26fcdd3627" ]
+    ]
+}
 ```
 
 ## Create an Azure IoT Central Application
@@ -350,16 +369,15 @@ Congratulations you have finished the tutorial.
 
 ## Appendix
 
-### Understanding Tutorial Solution
+### Learn about Azure Sphere
 
-From Visual Studio, open the main.c.
+1. [Azure Sphere Documentation](https://docs.microsoft.com/en-au/azure-sphere/)
+1. Using Yocto to Build an IoT OS Targeting a Crossover SoC. [Video](https://www.youtube.com/watch?v=-T7Et5qfqQQ), and [Slides](https://static.sched.com/hosted_files/ossna19/91/Crossover_ELC2019.pdf)
+2. [Anatomy of a secured MCU](https://azure.microsoft.com/en-au/blog/anatomy-of-a-secured-mcu/)
+3. [Azure Sphere’s customized Linux-based OS](https://azure.microsoft.com/en-au/blog/azure-sphere-s-customized-linux-based-os/)
+4. [Tech Communities Blog](https://techcommunity.microsoft.com/t5/internet-of-things/bg-p/IoTBlog)
 
-Review the following functions.
 
-1. InitPeripheralsAndHandlers
-2. GetTelemetry
-3. TwinCallback
-4. AzureDirectMethodHandler
 
 #### InitPeripheralsAndHandlers
 
