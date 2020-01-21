@@ -110,7 +110,7 @@ From Visual Studio open the **app_manifest.json** file.
 **Observe**:
 
 1. GPIO Capabilities: This application uses two GPIO pins. Pins 10, and 12.
-2. Allowed Application Connections: This is the ID of the High Level application that this application will be partnered with. It is required for inter core communications.
+2. Allowed Application Connections: This is the ID of the High Level application that this application will be partnered with. It is required for inter-core communications.
 
 ```json
 {
@@ -176,22 +176,32 @@ powershell -Command ((azsphere device show-attached)[0] -split ': ')[1].ToLower(
 
 1. Select Devices from the side menu, then the Device Template previously created.
 ![](resources/iot-central-create-device.png)
-
 2. Click **+ New** to add a new device
 
     Paste in the **device ID** you generated with the PowerShell command into the **Device ID** field and give your device a friendly name.
 
 ![](resources/iot-central-create-new-device.png)
-
 3. Click **Create** to create the new device.
 
 ---
 
-## Configure the Azure Sphere Application for Azure IoT Central
+## Configure Azure IoT Central Device Provisioning
+
+To connect a device to Azure IoT Hub or IoT Central a Device Connection string is required. For deployments of any scale you do not want to hard code the Azure IoT connection string as it would very quickly become unmanageable.
+
+When you created the device in Azure IoT Central you used the immutable (unforgeable) Azure Sphere device ID.
+
+This device ID along with the following information:
+
+1. The Azure IoT Central Scope ID,
+2. The Global URL for the Azure Device Provision Service,
+3. The URL of your Azure IoT Central Application.
+
+This information along with the Azure Device provisioning Service included with Azure IoT Central will return the Azure IoT Connection string required by the device to communicate with Azure IoT.
 
 Review the [Azure IoT Central Sample ](https://github.com/Azure/azure-sphere-samples/blob/master/Samples/AzureIoT/IoTCentral.md) guide.
 
-### Config the Azure Sphere Application
+### Step 1: Config the Azure Sphere Application
 
 1. Open the **azure-sphere-hlcore-iot-central** solution you cloned with Visual Studio
 2. Open the **app_manifest.json** file
@@ -254,13 +264,13 @@ Review the [Azure IoT Central Sample ](https://github.com/Azure/azure-sphere-sam
     }
     ```
 
-### Configure Visual Studio App Deployment Settings
+### Step 2: Configure Visual Studio App Deployment Settings
 
 Before building the application with Visual Studio ensure ARM-Debug and GDB Debugger (HLCore) options are selected.
 
 ![](resources/visual-studio-start-config.png)
 
-### Build, Deploy, and start Debugging
+### Step 3: Build, Deploy, and start Debugging
 
 To start the build, deploy, debug process either click the Visual Studio **Start Selected Item** icon or press <kbd>**F5**</kbd>. To Build and deploy without attaching the debugger, simply press <kbd>**Ctrl+F5**</kbd>.
 
