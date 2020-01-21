@@ -186,7 +186,7 @@ powershell -Command ((azsphere device show-attached)[0] -split ': ')[1].ToLower(
 
 ## Deploy your first High-Level Azure Sphere Application
 
-### Understanding the High-Level Core Security Requirements
+### Understanding the High-Level Core Security
 
 Applications on Azure Sphere are locked down by default and you must grant capabilities to the application.
 
@@ -224,7 +224,7 @@ From Visual Studio open the **app_manifest.json** file.
 
 ### Azure IoT Central Configuration
 
-To connect a device to Azure IoT Hub or IoT Central a Device Connection string is required. For security and manageability do **NOT** hard code the Azure IoT connection string in your High-Level application.
+To connect a device to Azure IoT Hub or IoT Central a Device Connection string is required. For **security** and **manageability** do **NOT** hard code the Azure IoT connection string in your High-Level application.
 
 When you created the device in Azure IoT Central you used the **immutable (unforgeable)** Azure Sphere device ID.
 
@@ -236,24 +236,30 @@ This device ID along with the following information:
 
 are used by the Azure Device Provisioning Service (part of Azure IoT Central) to return the Azure IoT Connection string to your application.
 
-### Step 1: Config the Azure Sphere Application
+### Step 1: Open the High-Level Application with Visual Studio 2019
 
-1. Open the **azure-sphere-hlcore-iot-central** solution you cloned with Visual Studio
+1. Start Visual Studio 2019, select **Open a local folder**, navigate to the Azure Sphere tutorial project folder you cloned from GitHub, then open the **azure-sphere-hlcore-iot-central** project.
 2. Open the **app_manifest.json** file
-3. Set the **default Azure Sphere Tenant**
 
-    You may need to select the default Azure Sphere Tenant. Use the ```azsphere tenant list``` command to list available tenants, use the ```azsphere tenant select -i <guid>``` to select the default tenant.
-4. Get the **Tenant ID**. 
-    
-    From the **Azure Sphere Developer Command Prompt**, issue the following command. 
+### Step 2: Azure IoT Central Connection Information
+
+1. Set the **default Azure Sphere Tenant**
+
+    You may need to select the default Azure Sphere Tenant.
+
+    From the **Azure Sphere Developer Command Prompt**, run the ```azsphere tenant list``` command to list available tenants, use the ```azsphere tenant select -i <guid>``` to select the default tenant.
+
+2. Get the **Tenant ID**.
+
+    From the **Azure Sphere Developer Command Prompt**, run the following command.
 
     ```bash
     azsphere tenant show-selected
     ```
 
-    Copy the returned value and paste it into the **DeviceAuthentication** field of the **app_manifest.json** file:
+    Copy the returned value and paste it into the **DeviceAuthentication** field of the **app_manifest.json**.
 
-5. Get the **Device Provisioning Service Url**
+3. Get the **Device Provisioning Service URLs**
 
     From the **Azure Sphere Developer Command Prompt**, change to the *azure-sphere-samples\Samples\AzureIoT\Tools* folder you previously cloned, and run *ShowIoTCentralConfig.exe*.
 
@@ -261,11 +267,9 @@ are used by the Azure Device Provisioning Service (part of Azure IoT Central) to
     ShowIoTCentralConfig
     ```
 
-    When prompted, log in with the credentials you use for Azure IoT Central.
+    When prompted, log in with the credentials you use for Azure IoT Central. The output of this command will be similar to the following:
 
-    The output of this command will be similar as follows:
-
-    ```
+    ```text
     Are you using a Work/School account to sign in to your IoT Central Application (Y/N) ?
 
     Getting your IoT Central applications
@@ -278,28 +282,38 @@ are used by the Azure Device Provisioning Service (part of Azure IoT Central) to
     "AllowedConnections": [ "global.azure-devices-provisioning.net", "saas-iothub-9999999-f33a-4002-4444-7ca8989898989.azure-devices.net" ],
     "DeviceAuthentication": "--- YOUR AZURE SPHERE TENANT ID--- ",
     ```
-7. 	Set the **AllowedConnections** Information
 
-    Copy the **AllowedConnections** URLs into the **app_manifest.json**. The app_manifest.json file should look similar to the following:
+ 4.   Find and modify the following lines in your app_manifest.json with the information returned from the ```ShowIoTCentralConfig``` command:
 
-    ```json
-    {
+        * "CmdArgs": [ "0ne9992KK6D" ],
+        * "AllowedConnections": [ global.azure-devices-provisioning.net", "saas-iothub-9999999-f33a-4002-4444-7ca8989898989.azure-devices.net" ]
+
+
+```json
+{
     "SchemaVersion": 1,
-    "Name": "AzureSphereBlink1",
-    "ComponentId": "a3ca0929-5f46-42b0-91ba-d5de1222da86",
+    "Name": "AzureSphereIoTCentral",
+    "ComponentId": "25025d2c-66da-4448-bae1-ac26fcdd3627",
     "EntryPoint": "/bin/app",
-    "CmdArgs": [ "0ne9992KK6D", "6583cf17-d321-4d72-8283-0b7c5b56442b" ],
+    "CmdArgs": [ "<YOUR AZURE IOT CENTRAL SCOPE ID>", "6583cf17-d321-4d72-8283-0b7c5b56442b" ],
     "Capabilities": {
-        "Gpio": [ 9 ],
+        "Gpio": [ 0, 19, 21 ]
         "Uart": [ "ISU0" ],
-        "AllowedConnections": [ "global.azure-devices-provisioning.net", "saas-iothub-9999999-f33a-4002-4444-7ca8989898989.azure-devices.net" ],
-        "DeviceAuthentication": "999x999xeb-e021-43ce-8gh8-8k9lp888494"
+        "AllowedConnections": [ "global.azure-devices-provisioning.net", "<YOUR AZURE IOT CENTRAL URL>" ],
+        "DeviceAuthentication": "<YOUR AZURE SPHERE TENANT ID>",
+        "AllowedApplicationConnections": [ "6583cf17-d321-4d72-8283-0b7c5b56442b" ]
     },
     "ApplicationType": "Default"
-    }
-    ```
+}
+```
 
-### Step 2:  Visual Studio App Deployment Settings
+### Step 3: Configure Inter-Core Communications
+
+The Azure Sphere High-Level Application requires **inter-core** communications and this configured.
+
+For this sample this has already been set to the Component ID of the Real-Time core application.
+
+### Step 4:  Visual Studio App Deployment Settings
 
 Before building the application with Visual Studio ensure ARM-Debug and GDB Debugger (HLCore) options are selected.
 
@@ -307,7 +321,7 @@ Before building the application with Visual Studio ensure ARM-Debug and GDB Debu
 
 ### Step 3: Build, Deploy and start Debugging
 
-To start the build, deploy, debug process either click the Visual Studio **Start Selected Item** icon or press <kbd>**F5**</kbd>. To Build and deploy without attaching the debugger, simply press <kbd>**Ctrl+F5**</kbd>.
+To start the build, deploy and debug process either click the Visual Studio **Start Selected Item** icon or press <kbd>**F5**</kbd>. To Build and deploy without attaching the debugger, press <kbd>**Ctrl+F5**</kbd>.
 
 ![](resources/visual-studio-start-debug.png)
 
