@@ -225,6 +225,9 @@ cleanup:
 	free(payLoadString);
 }
 
+/// <summary>
+///     Checks to see if the device twin twinProperty(name) is found in the json object. If yes, then act upon the request
+/// </summary>
 void SetDesiredState(JSON_Object* desiredProperties, DeviceTwinPeripheral* deviceTwinPeripheral) {
 	JSON_Object* jsonObject = json_object_dotget_object(desiredProperties, deviceTwinPeripheral->twinProperty);
 	if (jsonObject != NULL) {

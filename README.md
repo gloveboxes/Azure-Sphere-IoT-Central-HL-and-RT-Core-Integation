@@ -33,7 +33,6 @@ If unfamiliar with Azure Sphere development then review the [Create a Secure Azu
 
 There are **two** applications deployed to the Azure Sphere. 
 
-
 1. The first application is a **High-Level** *Linux* application running on the **Cortex A7** core. It is responsible for sending temperature and humidity data to Azure IoT Central, processing Digital Twin and Direct Method messages from Azure IoT Central, and finally, passing on **inter-core** messages from the *FreeRTOS* application running on the Real-Time core to Azure IoT Central.
 1. The second is a **Real-Time** *FreeRTOS* application running in the **Cortex M4**. It runs a number of FreeRTOS Tasks. The first task is to blink an LED, the second is to monitor for button presses, and the third is to send **inter-core** messages to the **High-Level** application whenever the button is pressed. **Note**, the FreeRTOS application running on the Real-Time core cannot connect directly to the network.
 
@@ -47,7 +46,7 @@ Azure Sphere is a solution for securing MCU Power Devices. It comprises a secure
 
 ![](resources/azure-sphere-end-to-end.png)
 
-Our growing ecosystem of hardware partners.
+Growing ecosystem of hardware partners.
 
 ![](resources/azure-sphere.png)
 
@@ -90,7 +89,7 @@ Follow the [Install for Windows](https://docs.microsoft.com/en-gb/azure-sphere/i
 
 ## Deploy your first FreeRTOS Application to Azure Sphere
 
-1. Start Visual Studio 2019, select **Open a local folder**, navigate to the Azure Sphere tutorial project folder, then open the  **azure-sphere-rtcore-freertos** project.
+1. Start Visual Studio 2019, select **Open a local folder**, navigate to the Azure Sphere tutorial project folder you cloned from GitHub, then open the  **azure-sphere-rtcore-freertos** project.
 2. Set the startup configuration. Select the **ARM-Debug** configuration, and the **GDB Debugger (RTCore)** startup item.
 
     ![](resources/azure-sphere-rtcore-startup-config.png)
@@ -185,11 +184,49 @@ powershell -Command ((azsphere device show-attached)[0] -split ': ')[1].ToLower(
 
 ---
 
-## Configure Azure IoT Central Device Provisioning
+## Deploy your first High-Level Azure Sphere Application
 
-To connect a device to Azure IoT Hub or IoT Central a Device Connection string is required. For deployments of any scale, you do not want to hard code the Azure IoT connection string as it would very quickly become unmanageable.
+### Understanding the High-Level Core Security Requirements
 
-When you created the device in Azure IoT Central you used the immutable (unforgeable) Azure Sphere device ID.
+Applications on Azure Sphere are locked down by default and you must grant capabilities to the application.
+
+High-Level Application capabilities include what hardware can be accessed, what internet services can be called (including Azure IoT Central and the Azure Device Provisioning Service), and what inter-core communications are allowed.
+
+From Visual Studio open the **app_manifest.json** file.
+
+```json
+{
+  "SchemaVersion": 1,
+  "Name": "AzureSphereIoTCentral",
+  "ComponentId": "25025d2c-66da-4448-bae1-ac26fcdd3627",
+  "EntryPoint": "/bin/app",
+  "CmdArgs": [ "0ne0999999D", "6583cf17-d321-4d72-8283-0b7c5b56442b" ],
+  "Capabilities": {
+    "Gpio": [ 0, 19, 21 ]
+    "Uart": [ "ISU0" ],
+    "AllowedConnections": [ "global.azure-devices-provisioning.net", "saas-iothub-99999999-f33a-4002-a44a-9999991b00b6.azure-devices.net" ],
+    "DeviceAuthentication": "99999999-e021-43ce-9f2b-999999997494",
+    "AllowedApplicationConnections": [ "6583cf17-d321-4d72-8283-0b7c5b56442b" ]
+  },
+  "ApplicationType": "Default"
+}
+```
+
+**Observe**:
+
+1. **ComponentId**: A [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier#Format) to identify the application. This Component ID is referenced in the Real-Time application app_manifest to enable inter-core communications with this High-Level application.
+2. **Gpio**: This application uses three GPIO pins. Pins 0 (a relay switch), 19 (blick send status), and 21 (device twin test LED).
+3. **Uart**: The Uart is used to communicate with the Seeed Studio Grove Shield.
+4. **AllowedConnections**: What internet URLs can be called.
+5. **DeviceAuthentication**: Your Azure Sphere Tenant ID.
+6. **AllowedApplicationConnections**: This is the Component ID of the Real-Time application this application will be partnered with. It is required for inter-core communications.
+7. **CmdArgs**: The first argument is the Azure IoT Central Scope ID. The second argument is the Component ID of the Real-Time application, passed to the application at startup as a convenience to keep all configuration information in one file.
+
+### Azure IoT Central Configuration
+
+To connect a device to Azure IoT Hub or IoT Central a Device Connection string is required. For security and manageability do **NOT** hard code the Azure IoT connection string in your High-Level application.
+
+When you created the device in Azure IoT Central you used the **immutable (unforgeable)** Azure Sphere device ID.
 
 This device ID along with the following information:
 
@@ -197,9 +234,7 @@ This device ID along with the following information:
 2. The Global URL for the Azure Device Provision Service,
 3. The URL of your Azure IoT Central Application.
 
-This information along with the Azure Device provisioning Service included with Azure IoT Central will return the Azure IoT Connection string required by the device to communicate with Azure IoT.
-
-Review the [Azure IoT Central Sample ](https://github.com/Azure/azure-sphere-samples/blob/master/Samples/AzureIoT/IoTCentral.md) guide.
+are used by the Azure Device Provisioning Service (part of Azure IoT Central) to return the Azure IoT Connection string to your application.
 
 ### Step 1: Config the Azure Sphere Application
 
@@ -253,7 +288,7 @@ Review the [Azure IoT Central Sample ](https://github.com/Azure/azure-sphere-sam
     "Name": "AzureSphereBlink1",
     "ComponentId": "a3ca0929-5f46-42b0-91ba-d5de1222da86",
     "EntryPoint": "/bin/app",
-    "CmdArgs": [ "0ne9992KK6D" ],
+    "CmdArgs": [ "0ne9992KK6D", "6583cf17-d321-4d72-8283-0b7c5b56442b" ],
     "Capabilities": {
         "Gpio": [ 9 ],
         "Uart": [ "ISU0" ],
@@ -264,7 +299,7 @@ Review the [Azure IoT Central Sample ](https://github.com/Azure/azure-sphere-sam
     }
     ```
 
-### Step 2: Configure Visual Studio App Deployment Settings
+### Step 2:  Visual Studio App Deployment Settings
 
 Before building the application with Visual Studio ensure ARM-Debug and GDB Debugger (HLCore) options are selected.
 
@@ -311,55 +346,7 @@ Congratulations you have finished the tutorial.
 2. [Anatomy of a secured MCU](https://azure.microsoft.com/en-au/blog/anatomy-of-a-secured-mcu/)
 3. [Azure Sphere’s customized Linux-based OS](https://azure.microsoft.com/en-au/blog/azure-sphere-s-customized-linux-based-os/)
 4. [Tech Communities Blog](https://techcommunity.microsoft.com/t5/internet-of-things/bg-p/IoTBlog)
-
-
-
-#### InitPeripheralsAndHandlers
-
-Sets up SIGTERM termination handler, initialize peripherals, and set up event handlers.
-
-```c
-static int InitPeripheralsAndHandlers(void)
-{
-    struct sigaction action;
-    memset(&action, 0, sizeof(struct sigaction));
-    action.sa_handler = TerminationHandler;
-    sigaction(SIGTERM, &action, NULL);
-
-    epollFd = CreateEpollFd();
-    if (epollFd < 0) {
-        return -1;
-    }
-
-    OpenPeripheral(&sending);
-    OpenPeripheral(&relay);
-    OpenPeripheral(&light);
-
-    // Initialize Grove Shield and Grove Temperature and Humidity Sensor
-    GroveShield_Initialize(&i2cFd, 115200);
-    sht31 = GroveTempHumiSHT31_Open(i2cFd);
-
-    StartTimer(&iotClientDoWork);
-    StartTimer(&iotClientMeasureSensor);
-
-    return 0;
-}
-```
-
-#### GetTelemetry
-
-Reads sensor telemetry and returns the data as a JSON object.
-
-```c
-static int ReadTelemetry(char eventBuffer[], size_t len) {
-    GroveTempHumiSHT31_Read(sht31);
-    float temperature = GroveTempHumiSHT31_GetTemperature(sht31);
-    float humidity = GroveTempHumiSHT31_GetHumidity(sht31);
-
-    static const char* EventMsgTemplate = "{ \"Temperature\": \"%3.2f\", \"Humidity\": \"%3.1f\", \"MsgId\":%d }";
-    return snprintf(eventBuffer, len, EventMsgTemplate, temperature, humidity, msgId++);
-}
-```
+5. The [Azure IoT Central Sample](https://github.com/Azure/azure-sphere-samples/blob/master/Samples/AzureIoT/IoTCentral.md)
 
 #### TwinCallback
 

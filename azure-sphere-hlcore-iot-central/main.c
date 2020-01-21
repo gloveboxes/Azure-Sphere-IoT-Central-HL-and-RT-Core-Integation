@@ -37,22 +37,22 @@ static void SetFanSpeed(JSON_Object* json, Peripheral* peripheral);
 static int InitFanPWM(struct _peripheral* peripheral);
 
 static DeviceTwinPeripheral relay = {
-	.peripheral = {.fd = -1, .pin = RELAY_PIN, .initialState = GPIO_Value_Low, .invertPin = false, .initialise = OpenPeripheral, .name = "Relay" },
+	.peripheral = {.fd = -1, .pin = RELAY_PIN, .initialState = GPIO_Value_Low, .invertPin = false, .initialise = OpenPeripheral, .name = "relay1" },
 	.twinState = false,
-	.twinProperty = "relay",
+	.twinProperty = "relay1",
 	.handler = DeviceTwinHandler
 };
 
 static DeviceTwinPeripheral light = {
-	.peripheral = {.fd = -1, .pin = LIGHT_PIN, .initialState = GPIO_Value_High, .invertPin = true, .initialise = OpenPeripheral, .name = "LED" },
+	.peripheral = {.fd = -1, .pin = LIGHT_PIN, .initialState = GPIO_Value_High, .invertPin = true, .initialise = OpenPeripheral, .name = "led1" },
 	.twinState = false,
-	.twinProperty = "led",
+	.twinProperty = "led1",
 	.handler = DeviceTwinHandler
 };
 
 static DirectMethodPeripheral fan = {
-	.peripheral = {.fd = -1, .pin = FAN_PIN, .initialState = GPIO_Value_Low, .invertPin = false, .initialise = InitFanPWM, .name = "Fan" },
-	.methodName = "FanSpeed",
+	.peripheral = {.fd = -1, .pin = FAN_PIN, .initialState = GPIO_Value_Low, .invertPin = false, .initialise = InitFanPWM, .name = "fan1" },
+	.methodName = "Fan1",
 	.handler = SetFanSpeed
 };
 
