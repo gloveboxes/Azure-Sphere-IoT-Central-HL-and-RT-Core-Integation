@@ -83,17 +83,9 @@ Follow the [Install for Windows](https://docs.microsoft.com/en-gb/azure-sphere/i
 
 ## Clone the following GitHub Repositories
 
-1. The Azure Sphere Samples
+1. The Azure Sphere Samples: ```git clone https://github.com/Azure/azure-sphere-samples.git```
 
-    ```bash
-    git clone https://github.com/Azure/azure-sphere-samples.git
-    ```
-
-2. This tutorial
-
-    ```bash
-    git clone https://github.com/gloveboxes/Azure-Sphere-IoT-Central-HL-and-RT-Core-Integation.git
-    ```
+2. This tutorial: ```git clone https://github.com/gloveboxes/Azure-Sphere-IoT-Central-HL-and-RT-Core-Integation.git```
 ---
 
 ## Deploy your first FreeRTOS Application to Azure Sphere
