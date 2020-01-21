@@ -69,7 +69,7 @@ This project also uses the Azure Device Provisioning Service (DPS) included with
 
 ## Tutorial Overview
 
-1. Set up your developer environment.
+1. Set up your development environment.
 2. Deploy your first FreeRTOS Application to Azure Sphere.
 3. Create an Azure IoT Central Application (Free trial).
 4. Connect Azure IoT Central to your Azure Sphere Tenant.
@@ -77,7 +77,7 @@ This project also uses the Azure Device Provisioning Service (DPS) included with
 
 ---
 
-## Setting up your Developer Environment
+## Setting up your Development Environment
 
 Follow the [Install for Windows](https://docs.microsoft.com/en-gb/azure-sphere/install/overview) guide, install the Azure Sphere SDK for Visual Studio, claim your device, and configure the Azure Sphere network.
 
