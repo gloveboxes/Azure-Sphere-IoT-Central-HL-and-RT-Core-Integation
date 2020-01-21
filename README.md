@@ -16,27 +16,24 @@ Follow me on Twitter [@dglover](https://twitter.com/dglover)
 |Language| C|
 |Date|As of January, 2020|
 
-## Problems Azure Sphere Addresses
-
-1. Customers demanding end to end security
-2. Integrating existing MCU (FreeRTOS) code with the Internet
-3. Simplifying Device Provisioning
 
 ## What you will learn
 
-1. Building an [Azure Sphere](https://azure.microsoft.com/services/azure-sphere/?WT.mc_id=github-blog-dglover) application that integrates with [Azure IoT Central](https://azure.microsoft.com/services/iot-central/?WT.mc_id=github-blog-dglover).
-2. Device control with ([Azure IoT Hub Device Twins](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-devguide-device-twins?WT.mc_id=github-blog-dglover)) and ([Azure IoT Hub Direct Methods](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-devguide-direct-methods?WT.mc_id=github-blog-dglover)).
-3. Integrating a FreeRTOS real time application running on Azure Sphere with Azure IoT.
+1. How to run a **FreeRTOS** Real Time application on Azure Sphere and integrate with Azure IoT.
+2. How to create an Azure IoT Central Application.
+2. How to integrating an [Azure Sphere](https://azure.microsoft.com/services/azure-sphere/?WT.mc_id=github-blog-dglover) application with [Azure IoT Central](https://azure.microsoft.com/services/iot-central/?WT.mc_id=github-blog-dglover).
+3. How to securely control an Azure Sphere remotely from Azure IoT Central **[Settings](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-devguide-device-twins?WT.mc_id=github-blog-dglover)** and **[Commands](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-devguide-direct-methods?WT.mc_id=github-blog-dglover)**.
+
 
 If unfamiliar with Azure Sphere development then review the [Create a Secure Azure Sphere App using the Grove Shield Sensor Kit](https://github.com/gloveboxes/Create-a-Secure-Azure-Sphere-App-using-the-Grove-Shield-Sensor-Kit) tutorial before starting this tutorial.
 
 ## Azure Sphere Solution Architecture
 
-There are two applications deployed to the Azure Sphere. 
+There are **two** applications deployed to the Azure Sphere. 
 
 
-1. The first application is a **High Level** *Linux* application running on the **Cortex A7** core. It is responsible for sending temperature and humidity telemetry to Azure IoT Central, processing Digital Twin and Direct Method messages from Azure IoT Central, and finally, passing on event messages from the Real Time core *FreeRTOS* application to Azure IoT Central.
-1. The second is a **Real Time** *FreeRTOS* application running in the **Cortex M4**. It runs a number of FreeRTOS Tasks. The first task is to blink an LED, the second is to monitor for button presses, and the third is to send **inter-core** messages to the **High Level** application whenever the button is pressed. Note, the FreeRTOS application running on the Real Time core cannot connect directly to the network.
+1. The first application is a **High Level** *Linux* application running on the **Cortex A7** core. It is responsible for sending temperature and humidity data to Azure IoT Central, processing Digital Twin and Direct Method messages from Azure IoT Central, and finally, passing on **inter-core** messages from the *FreeRTOS* application running on the Real Time core to Azure IoT Central.
+1. The second is a **Real Time** *FreeRTOS* application running in the **Cortex M4**. It runs a number of FreeRTOS Tasks. The first task is to blink an LED, the second is to monitor for button presses, and the third is to send **inter-core** messages to the **High Level** application whenever the button is pressed. **Note**, the FreeRTOS application running on the Real Time core cannot connect directly to the network.
 
 ![](resources/azure-sphere-application-architecture.png)
 
@@ -50,16 +47,11 @@ It comprises a secured, connected, crossover microcontroller unit (MCU), a custo
 
 ![](resources/azure-sphere-end-to-end.png)
 
-
-
 ## Azure Sphere and Azure IoT
 
-Your Azure Sphere devices can communicate with the Azure IoT by using an Azure IoT Hub or by using Azure IoT Central.
+Your Azure Sphere devices can communicate with the Azure IoT with Azure IoT Hub or Azure IoT Central. This tutorial focuses on Azure IoT Central.
 
-This project uses the Azure Device Provisioning Service (DPS) included with Azure IoT Central. If you are using Azure IoT Hub then you need to create an instance of Azure Device Provisioning Service.
-
-See **[Use Azure IoT with Azure Sphere](https://docs.microsoft.com/en-us/azure-sphere/app-development/use-azure-iot)** for more information.
-
+This project also uses the Azure Device Provisioning Service (DPS) included with Azure IoT Central. If you are using Azure IoT Hub then you need to create an instance of [Azure Device Provisioning Service](https://docs.microsoft.com/en-us/azure-sphere/app-development/use-azure-iot).
 
 ### What is Azure IoT Central
 
@@ -97,7 +89,7 @@ Follow the [Install for Windows](https://docs.microsoft.com/en-gb/azure-sphere/i
 2. Set the startup configuration. Select the **ARM-Debug** configuration, and the **GDB Debugger (RTCore)** startup item.
 
     ![](resources/azure-sphere-rtcore-startup-config.png)
-3. Press **F5**, this will start the build, deploy, attach debugger process. The leftmost **blue LED** will start **blinking**. 
+3. Press <kbd>**F5**</kbd>, this will start the build, deploy, attach debugger process. The leftmost **blue LED** will start **blinking**. 
 5. Press **Button A** on the Azure Sphere to change the blink rate. 
 6. You can **Remote Debug** the FreeRTOS application running on Azure Sphere Cortex M4 Core. 
     1. From Visual Studio, open the FreeRTOS application **main.c** file.
@@ -133,7 +125,7 @@ From Visual Studio open the **app_manifest.json** file.
 
 ### Declaring the Partner Application
 
-In the **launch.js.json** file you need to declare the ID of the High Level Application that this Real Time application will be communicating with. 
+In the **launch.js.json** file you need to declare the ID of the High Level Application that this Real Time application will be communicating with.
 
 ```json
 {
@@ -145,105 +137,29 @@ In the **launch.js.json** file you need to declare the ID of the High Level Appl
 }
 ```
 
-## Create an Azure IoT Central Application
+## Getting Started with Azure IoT Central
 
 We are going to create an Azure IoT Central application, connect Azure IoT Central to an Azure Sphere Tenant, and finally create a device.
 
-![](resources/azure_iot_central.png)
+---
 
-1. Open the [Azure IoT Central](https://azure.microsoft.com/en-au/services/iot-central/?WT.mc_id=github-blog-dglover) in a new browser tab, then click **Getting started**.
+### Step 1: Create an Azure IoT Central Application
 
-2. Next, you will need to sign with your **Microsoft** Personal, or Work, or School account. If you do not have a Microsoft account, then you can create one for free using the **Create one!** link.
+Follow instructions to **[Create an Azure Iot Central Application](resources/azure-iot-central/azure-iot-central.md)**
 
-    ![iot central](resources/iot-central-login.png)
+---
 
-3. Create a new Azure IoT Central application. Scroll to the bottom of the screen, select **Create a custom app**. This takes you to the **Create Application** page.
+### Step 2: Connect Azure IoT Central to an Azure Sphere Tenant
 
-### Create a **New application**
+Any device that is claimed by your Azure Sphere tenant will be automatically enrolled when it first connects to your Azure IoT Central application.
 
-Specify **Application name**, **URL**, enable **7 day free trial**, and complete the registration form. Then click **Create**.
+Follow instructions to **[Set up Azure IoT Central to work with Azure Sphere](https://docs.microsoft.com/en-au/azure-sphere/app-development/setup-iot-central)**.
 
-![](resources/iot-central-new-application.png)
+---
 
-1. Add new Device Template
+### Step 3: Create an Azure Device in Azure IoT Central
 
-    Click **Device templates**
-
-    ![](resources/iot-central-device-template.png)
-
-2. Select **IoT device** template type
-
-    ![](resources/iot-central-new-iot-device-template.png)
-
-3. Create an **IoT Device** Template
-
-    1. Select **IoT device**,
-    2. Click **Next:Customise**,
-    3. Click **Next: Review**,
-    4. Click **Create**.
-    5. Name your template, and press **Enter**
-
-### Create a Capability Model
-
-A Capability Model describes how Azure IoT Central interacts with a device, and how telemetry should be displayed in IoT Central.
-
-#### Add an Interface
-
-1. Click **Custom**,
-![](resources/iot-central-create-custom.png)
-2. Click the **+ Add interface** to add an **Interface**.
-![](resources/iot-central-add-interface.png)
-3. Choose **Custom** interface.
-<!-- ![](resources/iot-central-capability-model.png) -->
-
-#### Add Capabilities
-
-![](resources/iot-central-add-capability.png)
-
-Click **<** (Collapse) to create more working space.
-
-1. Add **Humidity** Capability
-    1. Click **+** to Add capability.
-    2. Add **Humidity** Telemetry Capability
-    3. Set the Unit to **%**
-
-    ![add capability](resources/iot-central-add-capability-humidity.png)
-
-2. Click **Add Capability** and add **Temperature** Capabilities
-
-    * Display name: Temperature
-    * Name: Temperature
-    * Semantic type: Temperature
-    * Units: C
-    * Display Unit: C
-
-3. Click **Save** to save the capabilities model.
-
-    ![](resources/iot-central-save-capabilities.png)
-
-#### Create a Device Template View
-
-1. Click **Views**
-2. Click **Generate default views**
-3. Click **Generate default dashboard view(s)**
-4. You can customize the default view later.
-
-    ![create view](resources/iot-central-create-view.png)
-
-#### Publish the Template
-
-Click **Publish** to activate the template, then click **Publish**.
-![publish view](resources/iot-central-publish-view.png)
-
-## Connect Azure IoT Central to an Azure Sphere Tenant
-
-Any device that is claimed by your Azure Sphere tenant will be automatically enrolled when it first connects to your Azure IoT Central application. 
-
-You need to **[Set up Azure IoT Central to work with Azure Sphere](https://docs.microsoft.com/en-au/azure-sphere/app-development/setup-iot-central)**.
-
-### Create an Azure Device in Azure IoT Central
-
-From the Azure Sphere Developer Command Prompt, type the following command.
+From the **Azure Sphere Developer Command Prompt**, type the following command.
 
 ```bash
 azsphere device show-attached
@@ -343,7 +259,7 @@ Before building the application with Visual Studio ensure ARM-Debug and GDB Debu
 
 ### Build, Deploy, and start Debugging
 
-To start the build, deploy, debug process either click the Visual Studio **Start Selected Item** icon or press **F5**. To Build and deploy without attaching the debugger, simply press **Ctrl+F5**.
+To start the build, deploy, debug process either click the Visual Studio **Start Selected Item** icon or press <kbd>**F5**</kbd>. To Build and deploy without attaching the debugger, simply press <kbd>**Ctrl+F5**</kbd>.
 
 ![](resources/visual-studio-start-debug.png)
 

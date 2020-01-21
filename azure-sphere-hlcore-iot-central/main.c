@@ -39,14 +39,14 @@ static int InitFanPWM(struct _peripheral* peripheral);
 static DeviceTwinPeripheral relay = {
 	.peripheral = {.fd = -1, .pin = RELAY_PIN, .initialState = GPIO_Value_Low, .invertPin = false, .initialise = OpenPeripheral, .name = "Relay" },
 	.twinState = false,
-	.twinProperty = "RelayStatus",
+	.twinProperty = "relay",
 	.handler = DeviceTwinHandler
 };
 
 static DeviceTwinPeripheral light = {
-	.peripheral = {.fd = -1, .pin = LIGHT_PIN, .initialState = GPIO_Value_High, .invertPin = true, .initialise = OpenPeripheral, .name = "Light" },
+	.peripheral = {.fd = -1, .pin = LIGHT_PIN, .initialState = GPIO_Value_High, .invertPin = true, .initialise = OpenPeripheral, .name = "LED" },
 	.twinState = false,
-	.twinProperty = "LightStatus",
+	.twinProperty = "led",
 	.handler = DeviceTwinHandler
 };
 
@@ -185,6 +185,11 @@ static void InterCoreHandler(char* msg) {
 	}
 }
 
+/// <summary>
+///		This Device Twin Handler assumes the value field is a boolean from a IoT Central Toggle control.
+///		To handle other value types just create another handler for the type required - eg float and associate the new handler 
+///		with the Digital Twin definition.
+/// </summary>
 static void DeviceTwinHandler(JSON_Object* json, DeviceTwinPeripheral* deviceTwinPeripheral) {
 	deviceTwinPeripheral->twinState = (bool)json_object_get_boolean(json, "value");
 	if (deviceTwinPeripheral->peripheral.invertPin) {
