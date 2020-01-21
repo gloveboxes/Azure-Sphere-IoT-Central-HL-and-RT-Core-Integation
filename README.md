@@ -1,6 +1,6 @@
-# Integrate Azure Sphere with Azure IoT Central
+# Azure Sphere: A Solution Building Secure IoT Devices
 
-![](resources/azure-sphere-iot-central-banner.png)
+<!-- ![](resources/azure-sphere-iot-central-banner.png) -->
 
 Follow me on Twitter [@dglover](https://twitter.com/dglover)
 
@@ -16,11 +16,25 @@ Follow me on Twitter [@dglover](https://twitter.com/dglover)
 |Language| C|
 |Date|As of January, 2020|
 
-## Introduction to Azure Sphere Development
+## Problems Azure Sphere Addresses
+
+1. Customers demanding end to end security
+2. Integrating existing MCU (FreeRTOS) code with the Internet
+3. Simplifying Device Provisioning
+
+## Learn about Azure Sphere
+
+1. [Azure Sphere Documentation](https://docs.microsoft.com/en-au/azure-sphere/)
+1. Using Yocto to Build an IoT OS Targeting a Crossover SoC. [Video](https://www.youtube.com/watch?v=-T7Et5qfqQQ), and [Slides](https://static.sched.com/hosted_files/ossna19/91/Crossover_ELC2019.pdf)
+2. [Anatomy of a secured MCU](https://azure.microsoft.com/en-au/blog/anatomy-of-a-secured-mcu/)
+3. [Azure Sphere’s customized Linux-based OS](https://azure.microsoft.com/en-au/blog/azure-sphere-s-customized-linux-based-os/)
+4. [Tech Communities Blog](https://techcommunity.microsoft.com/t5/internet-of-things/bg-p/IoTBlog)
 
 ## What you will learn
 
-You will learn how to build an [Azure Sphere](https://azure.microsoft.com/services/azure-sphere/?WT.mc_id=github-blog-dglover) application that integrates with [Azure IoT Central](https://azure.microsoft.com/services/iot-central/?WT.mc_id=github-blog-dglover). This includes support for displaying telemetry, controlling the device state using IoT Central *Settings* ([Azure IoT Hub Device Twins](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-devguide-device-twins?WT.mc_id=github-blog-dglover)) and *Commands* ([Azure IoT Hub Direct Methods](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-devguide-direct-methods?WT.mc_id=github-blog-dglover)), defining rules to trigger workflows, and a custom dashboard.
+1. Building an [Azure Sphere](https://azure.microsoft.com/services/azure-sphere/?WT.mc_id=github-blog-dglover) application that integrates with [Azure IoT Central](https://azure.microsoft.com/services/iot-central/?WT.mc_id=github-blog-dglover).
+2. Device control with ([Azure IoT Hub Device Twins](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-devguide-device-twins?WT.mc_id=github-blog-dglover)) and ([Azure IoT Hub Direct Methods](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-devguide-direct-methods?WT.mc_id=github-blog-dglover)).
+3. Integrating a FreeRTOS real time application running on Azure Sphere with Azure IoT.
 
 If unfamiliar with Azure Sphere development then review the [Create a Secure Azure Sphere App using the Grove Shield Sensor Kit](https://github.com/gloveboxes/Create-a-Secure-Azure-Sphere-App-using-the-Grove-Shield-Sensor-Kit) tutorial before starting this tutorial.
 
@@ -28,19 +42,28 @@ If unfamiliar with Azure Sphere development then review the [Create a Secure Azu
 
 Azure Sphere is a secured, high-level application platform with built-in communication and security features for internet-connected devices.
 
-It comprises a secured, connected, crossover microcontroller unit (MCU), a custom high-level Linux-based operating system (OS), and a cloud-based security service that provides continuous, renewable security.
-
 ![](resources/azure-sphere.png)
 
-## Why Azure Sphere
+It comprises a secured, connected, crossover microcontroller unit (MCU), a custom high-level Linux-based operating system (OS), and a cloud-based security service that provides continuous, renewable security.
 
-As billions of new devices are connected, organizations need to secure them to help protect data, privacy, physical safety, and infrastructure. Azure Sphere builds on decades of Microsoft experience in hardware, software, and cloud to provide a turnkey solution for IoT devices. Get defense in depth to embrace IoT innovation with confidence.
+![](resources/azure-sphere-end-to-end.png)
+
+
+
+## Azure Sphere and Azure IoT
+
+Your Azure Sphere devices can communicate with the Azure IoT by using an Azure IoT Hub or by using Azure IoT Central.
+
+This project uses the Azure Device Provisioning Service (DPS) included with Azure IoT Central. If you are using Azure IoT Hub then you need to create an instance of Azure Device Provisioning Service.
+
+See **[Use Azure IoT with Azure Sphere](https://docs.microsoft.com/en-us/azure-sphere/app-development/use-azure-iot)** for more information.
+
 
 ### What is Azure IoT Central
 
-Azure IoT Central provides an easy way to connect, monitor and manage your Internet of Things (IoT) assets at scale. [Azure IoT Central](https://azure.microsoft.com/en-in/services/iot-central/?WT.mc_id=github-blog-dglover) is a hosted, extensible software as a service (SaaS) platform that simplifies the setup of your IoT solution and helps reduce the burden and costs of IoT management, operations, and development. Provide customers superior products and services while expanding your business possibilities.
+[Azure IoT Central](https://azure.microsoft.com/en-in/services/iot-central/?WT.mc_id=github-blog-dglover) provides an easy way to connect, monitor and manage your Internet of Things (IoT) assets at scale.
 
-![Azure IoT Central](resources/azure-iot.png)
+![Azure IoT Central](resources/azure-iot-central.jpg)
 
 ## Tutorial Overview
 
@@ -48,25 +71,66 @@ Azure IoT Central provides an easy way to connect, monitor and manage your Inter
 2. Set up Azure IoT Central to work with Azure Sphere
 3. Deploy an Azure IoT Central application to Azure Sphere
 
+## Developer Environment Set Up
+
+You need to set up your development environment, claim your Azure Sphere device, and configure the device network settings.
+
+Review [Overview of set-up procedures](https://docs.microsoft.com/en-gb/azure-sphere/install/overview)
+
 ## Clone the following GitHub Repositories
 
 1. The Azure Sphere Samples
 
-   ```bash
-   git clone https://github.com/Azure/azure-sphere-samples.git
-   ```
+    ```bash
+    git clone https://github.com/Azure/azure-sphere-samples.git
+    ```
 
 2. This tutorial
 
     ```bash
-    git clone https://github.com/gloveboxes/Create-a-Secure-IoT-Solution-with-Azphere-Sphere-and-and-Azure-IoT-Central.git
+    git clone https://github.com/gloveboxes/Azure-Sphere-IoT-Central-HL-and-RT-Core-Integation.git
     ```
+
+## Deploy the FreeRTOS Application to Azure Sphere
+
+1. Start Visual Studio 2019, select **Open a local folder**, navigate to the Azure Sphere tutorial project folder, then open the  **azure-sphere-rtcore-freertos** project.
+2. Set the startup configuration. Select the **ARM-Debug** configuration, and the **GDB Debugger (RTCore)** startup item.
+
+    ![](resources/azure-sphere-rtcore-startup-config.png)
+3. Press **F5**, this will start the build, deploy, attach debugger process. The leftmost **blue LED** will start **blinking**. 
+5. Press **Button A** on the Azure Sphere to change the blink rate. 
+6. You can **Remote Debug** the FreeRTOS application running on Azure Sphere Cortex M4 Core. 
+    1. From Visual Studio, open the FreeRTOS application **main.c** file.
+    2. Set a [Visual Studio Breakpoint](https://docs.microsoft.com/en-us/visualstudio/debugger/using-breakpoints?view=vs-2019) in the **ButtonTask** function on the line that reads ```bool pressed = !newState;```.
+    3. Press **Button A** on the Azure Sphere, Visual Studio will halt the execution of the FreeRTOS application and you can step through the code. Pretty darn neat!
+
+### Understanding the Real Time Core Security
+
+Applications on the the Azure Sphere are locked down by default. You need to grant capabilities to the application.
+
+From Visual Studio open the **app_manifest.json** file.
+
+```json
+{
+  "SchemaVersion": 1,
+  "Name": "GPIO_RTApp_MT3620_BareMetal",
+  "ComponentId": "6583cf17-d321-4d72-8283-0b7c5b56442b",
+  "EntryPoint": "/bin/app",
+  "CmdArgs": [],
+  "Capabilities": {
+    "Gpio": [ 10, 12 ],
+    "AllowedApplicationConnections": [ "25025d2c-66da-4448-bae1-ac26fcdd3627" ]
+  },
+  "ApplicationType": "RealTimeCapable"
+}
+
+```
 
 ## Create an Azure IoT Central Application
 
-![](resources/azure_iot_central.png)
-
 We are going to create an Azure IoT Central application, connect Azure IoT Central to an Azure Sphere Tenant, and finally create a device.
+
+![](resources/azure_iot_central.png)
 
 1. Open the [Azure IoT Central](https://azure.microsoft.com/en-au/services/iot-central/?WT.mc_id=github-blog-dglover) in a new browser tab, then click **Getting started**.
 
@@ -75,14 +139,6 @@ We are going to create an Azure IoT Central application, connect Azure IoT Centr
     ![iot central](resources/iot-central-login.png)
 
 3. Create a new Azure IoT Central application. Scroll to the bottom of the screen, select **Create a custom app**. This takes you to the **Create Application** page.
-
-<!-- 4. Select **Build as app**
-
-    ![](resources/iot-central-build-first-app.png)
-
-5. Select **Custom app**
-
-    ![](resources/iot-central-custom-app.png) -->
 
 ### Create a **New application**
 
@@ -109,6 +165,8 @@ Specify **Application name**, **URL**, enable **7 day free trial**, and complete
     5. Name your template, and press **Enter**
 
 ### Create a Capability Model
+
+A Capability Model describes how Azure IoT Central interacts with a device, and how telemetry should be displayed in IoT Central.
 
 #### Add an Interface
 
@@ -158,20 +216,11 @@ Click **<** (Collapse) to create more working space.
 Click **Publish** to activate the template, then click **Publish**.
 ![publish view](resources/iot-central-publish-view.png)
 
-## Connect Azure IoT Central to an Azure Azure Sphere Tenant
+## Connect Azure IoT Central to an Azure Sphere Tenant
 
-The Azure Sphere includes out of the box support for Azure IoT Hub and IoT Central.
+Any device that is claimed by your Azure Sphere tenant will be automatically enrolled when it first connects to your Azure IoT Central application. 
 
-Follow the complete [Set up Azure IoT Central to work with Azure Sphere](https://docs.microsoft.com/en-us/azure-sphere/app-development/setup-iot-central?WT.mc_id=github-blog-dglover) guide.
-
-In summary, you need to:
-
-1. Open an Azure Sphere Developer Command Prompt
-2. Authenticate ``` azsphere login ```
-3. Download the Certificate Authority (CA) certificate for your Azure Sphere tenant ``` azsphere tenant download-CA-certificate --output CAcertificate.cer ```
-4. Upload the tenant CA certificate to Azure IoT Central and generate a verification code
-5. Verify the tenant CA certificate
-6. Use the validation certificate to verify the tenant identity
+You need to **[Set up Azure IoT Central to work with Azure Sphere](https://docs.microsoft.com/en-au/azure-sphere/app-development/setup-iot-central)**.
 
 ### Create an Azure Device in Azure IoT Central
 
@@ -206,17 +255,24 @@ Review the [Azure IoT Central Sample ](https://github.com/Azure/azure-sphere-sam
 
 ### Config the Azure Sphere Application
 
-1. Open the *Create-a-Secure-IoT-Solution-with-Azphere-Sphere-and-and-Azure-IoT-Central* solution you cloned with Visual Studio
-2. Open the app_manifest.json file
-3. Set the default Azure Sphere Tenant
+1. Open the **azure-sphere-hlcore-iot-central** solution you cloned with Visual Studio
+2. Open the **app_manifest.json** file
+3. Set the **default Azure Sphere Tenant**
+
     You may need to select the default Azure Sphere Tenant. Use the ```azsphere tenant list``` command to list available tenants, use the ```azsphere tenant select -i <guid>``` to select the default tenant.
-4. From the Azure Sphere Developer Command Prompt, issue the following command to get the tenant ID. Copy the returned value and paste it into the DeviceAuthentication field of the app_manifest.json file:
+4. Get the **Tenant ID**. 
+    
+    From the **Azure Sphere Developer Command Prompt**, issue the following command. 
 
     ```bash
     azsphere tenant show-selected
     ```
 
-5. From the Azure Sphere Developer Command Prompt, change to the *azure-sphere-samples\Samples\AzureIoT\Tools* folder you previously cloned, and run *ShowIoTCentralConfig.exe*.
+    Copy the returned value and paste it into the **DeviceAuthentication** field of the **app_manifest.json** file:
+
+5. Get the **Device Provisioning Service Url**
+
+    From the **Azure Sphere Developer Command Prompt**, change to the *azure-sphere-samples\Samples\AzureIoT\Tools* folder you previously cloned, and run *ShowIoTCentralConfig.exe*.
 
     ```bash
     ShowIoTCentralConfig
@@ -239,7 +295,9 @@ Review the [Azure IoT Central Sample ](https://github.com/Azure/azure-sphere-sam
     "AllowedConnections": [ "global.azure-devices-provisioning.net", "saas-iothub-9999999-f33a-4002-4444-7ca8989898989.azure-devices.net" ],
     "DeviceAuthentication": "--- YOUR AZURE SPHERE TENANT ID--- ",
     ```
-7. 	Copy the information from the output into the app_manifest.json file in Visual Studio. You *app_manifest.json* file will look similar to the following:
+7. 	Set the **AllowedConnections** Information
+
+    Copy the **AllowedConnections** URLs into the **app_manifest.json**. The app_manifest.json file should look similar to the following:
 
     ```json
     {
