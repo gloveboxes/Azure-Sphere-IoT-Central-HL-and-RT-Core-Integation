@@ -43,13 +43,13 @@ There are **two** applications deployed to the Azure Sphere.
 
 ## What is Azure Sphere
 
-Azure Sphere is a secured, high-level application platform with built-in communication and security features for internet-connected devices.
-
-![](resources/azure-sphere.png)
-
-It comprises a secured, connected, crossover microcontroller unit (MCU), a custom high-level Linux-based operating system (OS), and a cloud-based security service that provides continuous, renewable security.
+Azure Sphere is a solution for securing MCU Power Devices. It comprises a secured, connected, crossover microcontroller unit (MCU), a custom high-level Linux-based operating system (OS), and a cloud-based security service that provides continuous, renewable security.
 
 ![](resources/azure-sphere-end-to-end.png)
+
+Our growing ecosystem of hardware partners.
+
+![](resources/azure-sphere.png)
 
 ---
 
