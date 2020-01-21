@@ -75,7 +75,7 @@ This project also uses the Azure Device Provisioning Service (DPS) included with
 
 ---
 
-## Developer Environment
+## Setting up your Developer Environment
 
 Follow the [Install for Windows](https://docs.microsoft.com/en-gb/azure-sphere/install/overview) guide, install the Azure Sphere SDK for Visual Studio, claim your device, and configure the Azure Sphere network.
 
