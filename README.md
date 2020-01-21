@@ -234,7 +234,7 @@ This device ID along with the following information:
 2. The Global URL for the Azure Device Provision Service,
 3. The URL of your Azure IoT Central Application.
 
-are used by the Azure Device Provisioning Service (part of Azure IoT Central) to return the Azure IoT Connection string to your application.
+are passed to the Azure Device Provisioning Service (part of Azure IoT Central) from your Azure High-Level application to obtain the Azure IoT Connection string.
 
 ### Step 1: Open the High-Level Application with Visual Studio 2019
 
