@@ -34,7 +34,7 @@ If unfamiliar with Azure Sphere development then review the [Create a Secure Azu
 There are **two** applications deployed to the Azure Sphere. 
 
 1. The first application is a **High-Level** *Linux* application running on the **Cortex A7** core. It is responsible for sending temperature and humidity data to Azure IoT Central, processing Digital Twin and Direct Method messages from Azure IoT Central, and finally, passing on **inter-core** messages from the *FreeRTOS* application running on the Real-Time core to Azure IoT Central.
-1. The second is a **Real-Time** *FreeRTOS* application running in the **Cortex M4**. It runs a number of FreeRTOS Tasks. The first task is to blink an LED, the second is to monitor for button presses, and the third is to send **inter-core** messages to the **High-Level** application whenever the button is pressed. **Note**, the FreeRTOS application running on the Real-Time core cannot connect directly to the network.
+1. The second is a **Real-Time** *FreeRTOS* application running in the **Cortex M4**. It runs several FreeRTOS Tasks. The first task is to blink an LED, the second is to monitor for button presses, and the third is to send **inter-core** messages to the **High-Level** application whenever the button is pressed. **Note**, the FreeRTOS application running on the Real-Time core cannot connect directly to the network.
 
 ![](resources/azure-sphere-application-architecture.png)
 
@@ -90,7 +90,7 @@ Follow the [Install for Windows](https://docs.microsoft.com/en-gb/azure-sphere/i
 ## Deploy your first FreeRTOS Application to Azure Sphere
 
 1. Start Visual Studio 2019, select **Open a local folder**, navigate to the Azure Sphere tutorial project folder you cloned from GitHub, then open the  **azure-sphere-rtcore-freertos** project.
-2. Set the startup configuration. Select the **ARM-Debug** configuration, and the **GDB Debugger (RTCore)** startup item.
+2. Set the startup configuration. Select the **ARM-Debug** configuration and the **GDB Debugger (RTCore)** startup item.
 
     ![](resources/azure-sphere-rtcore-startup-config.png)
 3. Press <kbd>**F5**</kbd>, this will start the build, deploy, attach debugger process. The leftmost **blue LED** on the Azure Sphere will start **blinking**.
@@ -129,7 +129,7 @@ From Visual Studio open the **app_manifest.json** file.
 
 ### Declaring the Partner Application
 
-In the **launch.js.json** file you need to declare the ID of the High-Level Application that this Real-Time application will be communicating with.
+In the **launch.js.json** file, you need to declare the ID of the High-Level Application that this Real-Time application will be communicating with.
 
 ```json
 {
@@ -215,7 +215,7 @@ From Visual Studio open the **app_manifest.json** file.
 **Observe**:
 
 1. **ComponentId**: A [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier#Format) to identify the application. This Component ID is referenced in the Real-Time application app_manifest to enable inter-core communications with this High-Level application.
-2. **Gpio**: This application uses three GPIO pins. Pins 0 (a relay switch), 19 (blick send status), and 21 (device twin test LED).
+2. **Gpio**: This application uses three GPIO pins. Pins 0 (a relay switch), 19 (blink send status), and 21 (device twin test LED).
 3. **Uart**: The Uart is used to communicate with the Seeed Studio Grove Shield.
 4. **AllowedConnections**: What internet URLs can be called.
 5. **DeviceAuthentication**: Your Azure Sphere Tenant ID.
@@ -305,7 +305,7 @@ Before building the application with Visual Studio ensure ARM-Debug and GDB Debu
 
 ![](resources/visual-studio-start-config.png)
 
-### Step 3: Build, Deploy, and start Debugging
+### Step 3: Build, Deploy and start Debugging
 
 To start the build, deploy, debug process either click the Visual Studio **Start Selected Item** icon or press <kbd>**F5**</kbd>. To Build and deploy without attaching the debugger, simply press <kbd>**Ctrl+F5**</kbd>.
 
