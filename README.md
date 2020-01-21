@@ -71,9 +71,9 @@ This project also uses the Azure Device Provisioning Service (DPS) included with
 
 1. Set up your developer environment.
 2. Deploy your first FreeRTOS Application to Azure Sphere.
-3. Create an Azure IoT Central Application (Free trial)
-4. Connect Azure IoT Central with your Azure Sphere Tenant.
-3. Deploy an Azure IoT Central application to Azure Sphere
+3. Create an Azure IoT Central Application (Free trial).
+4. Connect Azure IoT Central to your Azure Sphere Tenant.
+5. Deploy an Azure IoT Central application to Azure Sphere.
 
 ---
 
@@ -96,7 +96,7 @@ Follow the [Install for Windows](https://docs.microsoft.com/en-gb/azure-sphere/i
     ```
 ---
 
-## Deploy the FreeRTOS Application to Azure Sphere
+## Deploy your first FreeRTOS Application to Azure Sphere
 
 1. Start Visual Studio 2019, select **Open a local folder**, navigate to the Azure Sphere tutorial project folder, then open the  **azure-sphere-rtcore-freertos** project.
 2. Set the startup configuration. Select the **ARM-Debug** configuration, and the **GDB Debugger (RTCore)** startup item.
@@ -158,15 +158,15 @@ We are going to create an Azure IoT Central application, connect Azure IoT Centr
 
 ### Step 1: Create an Azure IoT Central Application
 
-Follow instructions to **[Create an Azure Iot Central Application](resources/azure-iot-central/azure-iot-central.md)**
+Follow instructions to **[Create an Azure IoT Central Application](resources/azure-iot-central/azure-iot-central.md)**
 
-### Step 2: Connect Azure IoT Central to an Azure Sphere Tenant
+### Step 2: Connect Azure IoT Central to your Azure Sphere Tenant
 
 Any device that is claimed by your Azure Sphere tenant will be automatically enrolled when it first connects to your Azure IoT Central application.
 
 Follow instructions to **[Set up Azure IoT Central to work with Azure Sphere](https://docs.microsoft.com/en-au/azure-sphere/app-development/setup-iot-central)**.
 
-### Step 3: Create an Azure Device in Azure IoT Central
+### Step 3: Create an Azure Sphere Device in Azure IoT Central
 
 From the **Azure Sphere Developer Command Prompt**, type the following command.
 
