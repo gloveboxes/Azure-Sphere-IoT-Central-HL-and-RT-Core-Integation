@@ -20,9 +20,9 @@ Follow me on Twitter [@dglover](https://twitter.com/dglover)
 
 ## What you will learn
 
-1. How to run a **FreeRTOS** Real Time application on Azure Sphere and integrate with Azure IoT.
+1. How to run a **FreeRTOS** Real-Time application on Azure Sphere and integrate with Azure IoT.
 2. How to create an Azure IoT Central Application.
-2. How to integrating an [Azure Sphere](https://azure.microsoft.com/services/azure-sphere/?WT.mc_id=github-blog-dglover) application with [Azure IoT Central](https://azure.microsoft.com/services/iot-central/?WT.mc_id=github-blog-dglover).
+2. How to integrate an [Azure Sphere](https://azure.microsoft.com/services/azure-sphere/?WT.mc_id=github-blog-dglover) application with [Azure IoT Central](https://azure.microsoft.com/services/iot-central/?WT.mc_id=github-blog-dglover).
 3. How to securely control an Azure Sphere remotely from Azure IoT Central **[Settings](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-devguide-device-twins?WT.mc_id=github-blog-dglover)** and **[Commands](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-devguide-direct-methods?WT.mc_id=github-blog-dglover)**.
 
 If unfamiliar with Azure Sphere development then review the [Create a Secure Azure Sphere App using the Grove Shield Sensor Kit](https://github.com/gloveboxes/Create-a-Secure-Azure-Sphere-App-using-the-Grove-Shield-Sensor-Kit) tutorial before starting this tutorial.
@@ -34,8 +34,8 @@ If unfamiliar with Azure Sphere development then review the [Create a Secure Azu
 There are **two** applications deployed to the Azure Sphere. 
 
 
-1. The first application is a **High Level** *Linux* application running on the **Cortex A7** core. It is responsible for sending temperature and humidity data to Azure IoT Central, processing Digital Twin and Direct Method messages from Azure IoT Central, and finally, passing on **inter-core** messages from the *FreeRTOS* application running on the Real Time core to Azure IoT Central.
-1. The second is a **Real Time** *FreeRTOS* application running in the **Cortex M4**. It runs a number of FreeRTOS Tasks. The first task is to blink an LED, the second is to monitor for button presses, and the third is to send **inter-core** messages to the **High Level** application whenever the button is pressed. **Note**, the FreeRTOS application running on the Real Time core cannot connect directly to the network.
+1. The first application is a **High-Level** *Linux* application running on the **Cortex A7** core. It is responsible for sending temperature and humidity data to Azure IoT Central, processing Digital Twin and Direct Method messages from Azure IoT Central, and finally, passing on **inter-core** messages from the *FreeRTOS* application running on the Real-Time core to Azure IoT Central.
+1. The second is a **Real-Time** *FreeRTOS* application running in the **Cortex M4**. It runs a number of FreeRTOS Tasks. The first task is to blink an LED, the second is to monitor for button presses, and the third is to send **inter-core** messages to the **High-Level** application whenever the button is pressed. **Note**, the FreeRTOS application running on the Real-Time core cannot connect directly to the network.
 
 ![](resources/azure-sphere-application-architecture.png)
 
@@ -101,16 +101,16 @@ Follow the [Install for Windows](https://docs.microsoft.com/en-gb/azure-sphere/i
     2. Set a [Visual Studio Breakpoint](https://docs.microsoft.com/en-us/visualstudio/debugger/using-breakpoints?view=vs-2019) in the **ButtonTask** function on the line that reads ```bool pressed = !newState;```.
     3. Press **Button A** on the Azure Sphere, Visual Studio will halt the execution of the FreeRTOS application and you can step through the code. Pretty darn neat!
 
-### Understanding the Real Time Core Security
+### Understanding the Real-Time Core Security
 
-Applications on the the Azure Sphere are locked down by default. You need to grant capabilities to the application.
+Applications on the Azure Sphere are locked down by default. You need to grant capabilities to the application.
 
 From Visual Studio open the **app_manifest.json** file.
 
 **Observe**:
 
 1. GPIO Capabilities: This application uses two GPIO pins. Pins 10, and 12.
-2. Allowed Application Connections: This is the ID of the High Level application that this application will be partnered with. It is required for inter-core communications.
+2. Allowed Application Connections: This is the ID of the High-Level application that this application will be partnered with. It is required for inter-core communications.
 
 ```json
 {
@@ -130,7 +130,7 @@ From Visual Studio open the **app_manifest.json** file.
 
 ### Declaring the Partner Application
 
-In the **launch.js.json** file you need to declare the ID of the High Level Application that this Real Time application will be communicating with.
+In the **launch.js.json** file you need to declare the ID of the High-Level Application that this Real-Time application will be communicating with.
 
 ```json
 {
@@ -187,7 +187,7 @@ powershell -Command ((azsphere device show-attached)[0] -split ': ')[1].ToLower(
 
 ## Configure Azure IoT Central Device Provisioning
 
-To connect a device to Azure IoT Hub or IoT Central a Device Connection string is required. For deployments of any scale you do not want to hard code the Azure IoT connection string as it would very quickly become unmanageable.
+To connect a device to Azure IoT Hub or IoT Central a Device Connection string is required. For deployments of any scale, you do not want to hard code the Azure IoT connection string as it would very quickly become unmanageable.
 
 When you created the device in Azure IoT Central you used the immutable (unforgeable) Azure Sphere device ID.
 
