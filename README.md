@@ -6,24 +6,30 @@ Follow me on Twitter [@dglover](https://twitter.com/dglover)
 
 |Author|[Dave Glover](https://developer.microsoft.com/en-us/advocates/dave-glover?WT.mc_id=github-blog-dglover), Microsoft Cloud Developer Advocate |
 |:----|:---|
-|Target Platform | Seeed Studio Azure Sphere MT3620 |
+|Target Platform | [Azure Sphere](https://azure.microsoft.com/services/azure-sphere/)  |
 |Target Service | [Azure IoT Central](https://azure.microsoft.com/services/iot-central/?WT.mc_id=github-blog-dglover) |
 |Developer Platform | Windows 10 or Ubuntu 18.04 |
 |Azure SDK | Azure Sphere SDK 19.11 or better |
 |Developer Tools| [Visual Studio (The free Community Edition or better)](https://visualstudio.microsoft.com/vs/?WT.mc_id=github-blog-dglover) or [Visual Studio Code (Free OSS)](https://code.visualstudio.com?WT.mc_id=github-blog-dglover)|
-|Hardware | [Seeed Studio Grove Shield](https://www.seeedstudio.com/MT3620-Grove-Shield.html), and the [Grove Temperature and Humidity Sensor (SHT31)](https://www.seeedstudio.com/Grove-Temperature-Humidity-Sensor-SHT31.html) |
+|Hardware | This tutorial is based on the [Azure Sphere MT3620 Development Kit](https://www.seeedstudio.com/Azure-Sphere-MT3620-Development-Kit-US-Version-p-3052.html), with the [Seeed Studio Grove Shield](https://www.seeedstudio.com/MT3620-Grove-Shield.html), the [Grove Temperature and Humidity Sensor (SHT31)](https://www.seeedstudio.com/Grove-Temperature-Humidity-Sensor-SHT31.html), and the [Grove Relay](https://www.seeedstudio.com/Grove-Relay.html) (alternatively a [Grove LED](https://www.seeedstudio.com/Grove-Red-LED.html) instead of the relay) |
 |Source Code | https://github.com/gloveboxes/Create-a-Secure-IoT-Solution-with-Azphere-Sphere-and-and-Azure-IoT-Central|
 |Language| C|
-|Date|As of January, 2020|
-
+|Date|January 2020|
+|Acknowledgements| [xiongyu0523/azure-sphere-rtcore-freertos](https://github.com/xiongyu0523/azure-sphere-rtcore-freertos)
 ---
+
+## Problems Addressed in this Tutorial
+
+1. Internet enabling an existing FreeRTOS application
+2. End to end security for telemetry and device control
+3. Streamlining device provisioning
 
 ## What you will learn
 
 1. How to run a **FreeRTOS** Real-Time application on Azure Sphere and integrate with Azure IoT.
 2. How to create an Azure IoT Central Application.
-2. How to integrate an [Azure Sphere](https://azure.microsoft.com/services/azure-sphere/?WT.mc_id=github-blog-dglover) application with [Azure IoT Central](https://azure.microsoft.com/services/iot-central/?WT.mc_id=github-blog-dglover).
-3. How to securely control an Azure Sphere remotely from Azure IoT Central **[Settings](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-devguide-device-twins?WT.mc_id=github-blog-dglover)** and **[Commands](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-devguide-direct-methods?WT.mc_id=github-blog-dglover)**.
+3. How to integrate an [Azure Sphere](https://azure.microsoft.com/services/azure-sphere/?WT.mc_id=github-blog-dglover) application with [Azure IoT Central](https://azure.microsoft.com/services/iot-central/?WT.mc_id=github-blog-dglover).
+4. How to securely control an Azure Sphere with Azure IoT Central Device **[Settings](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-devguide-device-twins?WT.mc_id=github-blog-dglover)** and **[Commands](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-devguide-direct-methods?WT.mc_id=github-blog-dglover)**.
 
 If unfamiliar with Azure Sphere development then review the [Create a Secure Azure Sphere App using the Grove Shield Sensor Kit](https://github.com/gloveboxes/Create-a-Secure-Azure-Sphere-App-using-the-Grove-Shield-Sensor-Kit) tutorial before starting this tutorial.
 
@@ -319,11 +325,23 @@ Before building the application with Visual Studio ensure ARM-Debug and GDB Debu
 
 ![](resources/visual-studio-start-config.png)
 
-### Step 3: Build, Deploy and start Debugging
+### Step 5: Build, Deploy and start Debugging
 
 To start the build, deploy and debug process either click the Visual Studio **Start Selected Item** icon or press <kbd>**F5**</kbd>. To Build and deploy without attaching the debugger, press <kbd>**Ctrl+F5**</kbd>.
 
 ![](resources/visual-studio-start-debug.png)
+
+---
+
+## Test the Solution
+
+Now you have both the FreeRTOS and the High-Level applications running there are things to test:
+
+1. Press **Button A** on the Azure Sphere. The FreeRTOS application will change the blink rate of the leftmost blue LED on the Azure Sphere and will send an inter-core message to the High-Level application which in turn will toggled the relay pin.
+
+2. Observer the **3rd LED from the left** on the Azure Sphere. It should blink green every 10 seconds as telemetry is sent to Azure IoT Central.
+
+3. The **Visual Studio debugger** should still be connected to the High-Level application. Set a [Visual Studio Breakpoint](https://docs.microsoft.com/en-us/visualstudio/debugger/using-breakpoints?view=vs-2019) in the **InterCoreHandler** function in the **main.c** file. Press **Button A** on the Azure Sphere, the debugger will stop code execution at the breakpoint. You can now step through the code as well as display/change variables.
 
 ---
 

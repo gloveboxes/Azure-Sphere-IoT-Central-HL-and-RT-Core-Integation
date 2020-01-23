@@ -87,3 +87,14 @@ Click **<** (Collapse) to create more working space.
 
 Click **Publish** to activate the template, then click **Publish**.
 ![publish view](resources/iot-central-publish-view.png)
+
+## Azure Sphere Device Control and Events
+
+Now that we have created the Azure IoT Central application we are going to add support for controlling the Azure Sphere device from Azure IoT Central, along with adding *event* support.
+
+There are two ways to control or set state on the Azure Sphere device from IoT Central.
+
+1. The first is Azure IoT Central Device **Settings**. Under the covers these are implemented as [Azure IoT Device Twins](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-devguide-device-twins). A message is sent the device, the corresponding action is undertaken, and then the Azure Sphere updates the Azure IoT Device Twin. The Device Twin is a JSON document that mirrors the state of the device. The JSON document can be used for cloud side queries and processing.
+
+2. The second way to control a device is Azure IoT Central **Commands**. Under the covers these are implemented as [Azure IoT Direct Methods](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-devguide-direct-methods). A message is sent to the device, the action carried out, and then the device acknowledges to Azure IoT the command has completed.
+
