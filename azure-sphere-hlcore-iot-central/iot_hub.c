@@ -50,7 +50,7 @@ bool SendMsg(const char* msg) {
 			return false;
 		}
 
-		if (IoTHubDeviceClient_LL_SendEventAsync(iothubClientHandle, messageHandle, NULL,
+		if (IoTHubDeviceClient_LL_SendEventAsync(iothubClientHandle, messageHandle, SendMessageCallback,
 			/*&callback_param*/ 0) != IOTHUB_CLIENT_OK) {
 			Log_Debug("WARNING: failed to hand over the message to IoTHubClient\n");
 			return false;

@@ -28,7 +28,7 @@ static void TerminationHandler(int signalNumber);
 static int InitPeripheralsAndHandlers(void);
 static void ClosePeripheralsAndHandlers(void);
 static void InterCoreHandler(char* msg);
-static void MeasureSendEventHandler(EventData* eventData);
+static void SendTelemetryEventHandler(EventData* eventData);
 static void RtCoreHeartBeat(EventData* eventData);
 static int OpenPeripheral(Peripheral* peripheral);
 static int StartTimer(Timer* timer);
@@ -66,7 +66,7 @@ static Timer iotClientDoWork = {
 	.name = "DoWork"
 };
 static Timer measureSensor = {
-	.eventData = {.eventHandler = &MeasureSendEventHandler },
+	.eventData = {.eventHandler = &SendTelemetryEventHandler },
 	.period = { 10, 0 },
 	.name = "MeasureSensor"
 };
@@ -133,52 +133,38 @@ static int ReadTelemetry(char eventBuffer[], size_t len) {
 	return snprintf(eventBuffer, len, EventMsgTemplate, temperature, humidity, msgId++);
 }
 
-static void preSendTelemtry(void) {
-	GPIO_SetValue(sendStatus.peripheral.fd, GPIO_Value_Low);
-}
-
-static void postSendTelemetry(void) {
-	GPIO_SetValue(sendStatus.peripheral.fd, GPIO_Value_High);
-}
-
 /// <summary>
 /// Azure timer event:  Check connection status and send telemetry
 /// </summary>
-static void MeasureSendEventHandler(EventData* eventData)
+static void SendTelemetryEventHandler(EventData* eventData)
 {
 	if (ConsumeTimerFdEvent(measureSensor.fd) != 0) {
 		terminationRequired = true;
 		return;
 	}
 
-	preSendTelemtry();
+	GPIO_ON(sendStatus.peripheral); // blink send status LED
 
 	if (ReadTelemetry(msgBuffer, JSON_MESSAGE_BYTES) > 0) {
 		SendMsg(msgBuffer);
 	}
 
-	postSendTelemetry();
+	GPIO_OFF(sendStatus.peripheral);
 }
 
 static void InterCoreHandler(char* msg) {
 	static int buttonPressCount = 0;
-
 	const struct timespec sleepTime = { 0, 100000000L };
-	if (relay.twinState) {
-		GPIO_SetValue(relay.peripheral.fd, GPIO_Value_Low);
-	}
-	else {
-		GPIO_SetValue(relay.peripheral.fd, GPIO_Value_High);
-	}
+
+	// Toggle LED
+	if (relay.twinState) { GPIO_OFF(relay.peripheral); }
+	else { GPIO_ON(relay.peripheral); }
 
 	nanosleep(&sleepTime, NULL);
 
-	if (relay.twinState) {
-		GPIO_SetValue(relay.peripheral.fd, GPIO_Value_High);
-	}
-	else {
-		GPIO_SetValue(relay.peripheral.fd, GPIO_Value_Low);
-	}
+	// Return LED to twinState
+	if (relay.twinState) { GPIO_ON(relay.peripheral); }
+	else { GPIO_OFF(relay.peripheral); }
 
 	if (snprintf(msgBuffer, JSON_MESSAGE_BYTES, "{ \"ButtonPressed\": %d }", ++buttonPressCount) > 0) {
 		SendMsg(msgBuffer);
@@ -192,13 +178,14 @@ static void InterCoreHandler(char* msg) {
 /// </summary>
 static void DeviceTwinHandler(JSON_Object* json, DeviceTwinPeripheral* deviceTwinPeripheral) {
 	deviceTwinPeripheral->twinState = (bool)json_object_get_boolean(json, "value");
-	if (deviceTwinPeripheral->peripheral.invertPin) {
-		GPIO_SetValue(deviceTwinPeripheral->peripheral.fd, (deviceTwinPeripheral->twinState == true ? GPIO_Value_Low : GPIO_Value_High));
+	if (deviceTwinPeripheral->twinState) {
+		GPIO_ON(deviceTwinPeripheral->peripheral);
 	}
 	else {
-		GPIO_SetValue(deviceTwinPeripheral->peripheral.fd, (deviceTwinPeripheral->twinState == true ? GPIO_Value_High : GPIO_Value_Low));
+		GPIO_OFF(deviceTwinPeripheral->peripheral);
 	}
 }
+
 
 /// <summary>
 ///     Set up SIGTERM termination handler, initialize peripherals, and set up event handlers.
@@ -229,7 +216,7 @@ static int InitPeripheralsAndHandlers(void)
 	InitInterCoreComms(epollFd, rtAppComponentId, InterCoreHandler);  // Initialize Inter Core Communications
 	SendMessageToRTCore("HeartBeat"); // Prime RT Core with Component ID Signature
 
-	START_TIMERS(timers);
+	START_TIMER_SET(timers);
 
 	return 0;
 }
@@ -241,7 +228,7 @@ static void ClosePeripheralsAndHandlers(void)
 {
 	Log_Debug("Closing file descriptors\n");
 
-	STOP_TIMERS(timers);
+	STOP_TIMER_SET(timers);
 
 	CLOSE_PERIPHERAL_SET(actuatorDevices);
 	CLOSE_PERIPHERAL_SET(deviceTwinDevices);
