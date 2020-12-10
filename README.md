@@ -4,13 +4,13 @@
 
 Follow me on Twitter [@dglover](https://twitter.com/dglover)
 
-|Author|[Dave Glover](https://developer.microsoft.com/en-us/advocates/dave-glover?WT.mc_id=github-blog-dglover), Microsoft Cloud Developer Advocate |
+|Author|[Dave Glover](https://developer.microsoft.com/advocates/dave-glover?WT.mc_id=iot-0000-dglover), Microsoft Cloud Developer Advocate |
 |:----|:---|
-|Target Platform | [Azure Sphere](https://azure.microsoft.com/services/azure-sphere/)  |
-|Target Service | [Azure IoT Central](https://azure.microsoft.com/services/iot-central/?WT.mc_id=github-blog-dglover) |
+|Target Platform | [Azure Sphere](https://azure.microsoft.com/services/azure-sphere/?WT.mc_id=iot-0000-dglover)  |
+|Target Service | [Azure IoT Central](https://azure.microsoft.com/services/iot-central/?WT.mc_id=iot-0000-dglover) |
 |Developer Platform | Windows 10 or Ubuntu 18.04 |
 |Azure SDK | Azure Sphere SDK 19.11 or better |
-|Developer Tools| [Visual Studio (The free Community Edition or better)](https://visualstudio.microsoft.com/vs/?WT.mc_id=github-blog-dglover) or [Visual Studio Code (Free OSS)](https://code.visualstudio.com?WT.mc_id=github-blog-dglover)|
+|Developer Tools| [Visual Studio (The free Community Edition or better)](https://visualstudio.microsoft.com/vs/?WT.mc_id=iot-0000-dglover) or [Visual Studio Code (Free OSS)](https://code.visualstudio.com/?WT.mc_id=iot-0000-dglover)|
 |Hardware | This tutorial is based on the [Azure Sphere MT3620 Development Kit](https://www.seeedstudio.com/Azure-Sphere-MT3620-Development-Kit-US-Version-p-3052.html), with the [Seeed Studio Grove Shield](https://www.seeedstudio.com/MT3620-Grove-Shield.html), the [Grove Temperature and Humidity Sensor (SHT31)](https://www.seeedstudio.com/Grove-Temperature-Humidity-Sensor-SHT31.html), and the [Grove Relay](https://www.seeedstudio.com/Grove-Relay.html) (alternatively a [Grove LED](https://www.seeedstudio.com/Grove-Red-LED.html) instead of the relay) |
 |Source Code | https://github.com/gloveboxes/Create-a-Secure-IoT-Solution-with-Azphere-Sphere-and-and-Azure-IoT-Central|
 |Language| C|
@@ -28,8 +28,8 @@ Follow me on Twitter [@dglover](https://twitter.com/dglover)
 
 1. How to run a **FreeRTOS** Real-Time application on Azure Sphere and integrate with Azure IoT.
 2. How to create an Azure IoT Central Application.
-3. How to integrate an [Azure Sphere](https://azure.microsoft.com/services/azure-sphere/?WT.mc_id=github-blog-dglover) application with [Azure IoT Central](https://azure.microsoft.com/services/iot-central/?WT.mc_id=github-blog-dglover).
-4. How to securely control an Azure Sphere with Azure IoT Central Device **[Settings](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-devguide-device-twins?WT.mc_id=github-blog-dglover)** and **[Commands](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-devguide-direct-methods?WT.mc_id=github-blog-dglover)**.
+3. How to integrate an [Azure Sphere](https://azure.microsoft.com/services/azure-sphere/?WT.mc_id=iot-0000-dglover) application with [Azure IoT Central](https://azure.microsoft.com/services/iot-central/?WT.mc_id=iot-0000-dglover).
+4. How to securely control an Azure Sphere with Azure IoT Central Device **[Settings](https://docs.microsoft.com/azure/iot-hub/iot-hub-devguide-device-twins?WT.mc_id=iot-0000-dglover)** and **[Commands](https://docs.microsoft.com/azure/iot-hub/iot-hub-devguide-direct-methods?WT.mc_id=iot-0000-dglover)**.
 
 If unfamiliar with Azure Sphere development then review the [Create a Secure Azure Sphere App using the Grove Shield Sensor Kit](https://github.com/gloveboxes/Create-a-Secure-Azure-Sphere-App-using-the-Grove-Shield-Sensor-Kit) tutorial before starting this tutorial.
 
@@ -62,11 +62,11 @@ Growing ecosystem of hardware partners.
 
 Your Azure Sphere devices can communicate with the Azure IoT with Azure IoT Hub or Azure IoT Central. This tutorial focuses on Azure IoT Central.
 
-This project also uses the Azure Device Provisioning Service (DPS) included with Azure IoT Central. If you are using Azure IoT Hub then you need to create an instance of [Azure Device Provisioning Service](https://docs.microsoft.com/en-us/azure-sphere/app-development/use-azure-iot).
+This project also uses the Azure Device Provisioning Service (DPS) included with Azure IoT Central. If you are using Azure IoT Hub then you need to create an instance of [Azure Device Provisioning Service](https://docs.microsoft.com/azure-sphere/app-development/use-azure-iot?WT.mc_id=iot-0000-dglover).
 
 ### What is Azure IoT Central
 
-[Azure IoT Central](https://azure.microsoft.com/en-in/services/iot-central/?WT.mc_id=github-blog-dglover) provides an easy way to connect, monitor and manage your Internet of Things (IoT) assets at scale.
+[Azure IoT Central](https://azure.microsoft.com/services/iot-central/?WT.mc_id=iot-0000-dglover) provides an easy way to connect, monitor and manage your Internet of Things (IoT) assets at scale.
 
 ![Azure IoT Central](resources/azure-iot-central.jpg)
 
@@ -84,7 +84,7 @@ This project also uses the Azure Device Provisioning Service (DPS) included with
 
 ## Setting up your Development Environment
 
-Follow the [Install for Windows](https://docs.microsoft.com/en-gb/azure-sphere/install/overview) guide, install the Azure Sphere SDK for Visual Studio, claim your device, and configure the Azure Sphere network.
+Follow the [Install for Windows](https://docs.microsoft.com/azure-sphere/install/overview?WT.mc_id=iot-0000-dglover) guide, install the Azure Sphere SDK for Visual Studio, claim your device, and configure the Azure Sphere network.
 
 ## Clone the following GitHub Repositories
 
@@ -103,7 +103,7 @@ Follow the [Install for Windows](https://docs.microsoft.com/en-gb/azure-sphere/i
 5. Press **Button A** on the Azure Sphere to change the blink rate. 
 6. You can **Remote Debug** the FreeRTOS application running on Azure Sphere Cortex M4 Core. 
     1. From Visual Studio, open the FreeRTOS application **main.c** file.
-    2. Set a [Visual Studio Breakpoint](https://docs.microsoft.com/en-us/visualstudio/debugger/using-breakpoints?view=vs-2019) in the **ButtonTask** function on the line that reads ```bool pressed = !newState;```.
+    2. Set a [Visual Studio Breakpoint](https://docs.microsoft.com/visualstudio/debugger/using-breakpoints?view=vs-2019&WT.mc_id=iot-0000-dglover) in the **ButtonTask** function on the line that reads ```bool pressed = !newState;```.
     3. Press **Button A** on the Azure Sphere, Visual Studio will halt the execution of the FreeRTOS application and you can step through the code. Pretty darn neat!
 
 ### Understanding the Real-Time Core Security
@@ -161,7 +161,7 @@ Follow instructions to **[Create an Azure IoT Central Application](resources/azu
 
 Any device that is claimed by your Azure Sphere tenant will be automatically enrolled when it first connects to your Azure IoT Central application.
 
-Follow instructions to **[Set up Azure IoT Central to work with Azure Sphere](https://docs.microsoft.com/en-au/azure-sphere/app-development/setup-iot-central)**.
+Follow instructions to **[Set up Azure IoT Central to work with Azure Sphere](https://docs.microsoft.com/azure-sphere/app-development/setup-iot-central?WT.mc_id=iot-0000-dglover)**.
 
 ### Step 3: Create an Azure Sphere Device in Azure IoT Central
 
@@ -341,7 +341,7 @@ Now you have both the FreeRTOS and the High-Level applications running there are
 
 2. Observer the **3rd LED from the left** on the Azure Sphere. It should blink green every 10 seconds as telemetry is sent to Azure IoT Central.
 
-3. The **Visual Studio debugger** should still be connected to the High-Level application. Set a [Visual Studio Breakpoint](https://docs.microsoft.com/en-us/visualstudio/debugger/using-breakpoints?view=vs-2019) in the **InterCoreHandler** function in the **main.c** file. Press **Button A** on the Azure Sphere, the debugger will stop code execution at the breakpoint. You can now step through the code as well as display/change variables.
+3. The **Visual Studio debugger** should still be connected to the High-Level application. Set a [Visual Studio Breakpoint](https://docs.microsoft.com/visualstudio/debugger/using-breakpoints?view=vs-2019&WT.mc_id=iot-0000-dglover) in the **InterCoreHandler** function in the **main.c** file. Press **Button A** on the Azure Sphere, the debugger will stop code execution at the breakpoint. You can now step through the code as well as display/change variables.
 
 ---
 
@@ -373,16 +373,16 @@ Congratulations you have finished the tutorial.
 
 ### Learn about Azure Sphere
 
-1. [Azure Sphere Documentation](https://docs.microsoft.com/en-au/azure-sphere/)
+1. [Azure Sphere Documentation](https://docs.microsoft.com/azure-sphere/?WT.mc_id=iot-0000-dglover)
 1. Using Yocto to Build an IoT OS Targeting a Crossover SoC. [Video](https://www.youtube.com/watch?v=-T7Et5qfqQQ), and [Slides](https://static.sched.com/hosted_files/ossna19/91/Crossover_ELC2019.pdf)
-2. [Anatomy of a secured MCU](https://azure.microsoft.com/en-au/blog/anatomy-of-a-secured-mcu/)
-3. [Azure Sphere’s customized Linux-based OS](https://azure.microsoft.com/en-au/blog/azure-sphere-s-customized-linux-based-os/)
-4. [Tech Communities Blog](https://techcommunity.microsoft.com/t5/internet-of-things/bg-p/IoTBlog)
+2. [Anatomy of a secured MCU](https://azure.microsoft.com/blog/anatomy-of-a-secured-mcu/?WT.mc_id=iot-0000-dglover)
+3. [Azure Sphere’s customized Linux-based OS](https://azure.microsoft.com/blog/azure-sphere-s-customized-linux-based-os/?WT.mc_id=iot-0000-dglover)
+4. [Tech Communities Blog](https://techcommunity.microsoft.com/t5/internet-of-things/bg-p/IoTBlog?WT.mc_id=iot-0000-dglover)
 5. The [Azure IoT Central Sample](https://github.com/Azure/azure-sphere-samples/blob/master/Samples/AzureIoT/IoTCentral.md)
 
 #### TwinCallback
 
-Handles [Azure IoT Hub Device Twins](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-devguide-device-twins?WT.mc_id=github-blog-dglover).
+Handles [Azure IoT Hub Device Twins](https://docs.microsoft.com/azure/iot-hub/iot-hub-devguide-device-twins?WT.mc_id=iot-0000-dglover).
 
 In Azure IoT Central, Azure IoT Hub Device Twins are exposed in the user interface as *Settings*.
 
@@ -433,7 +433,7 @@ cleanup:
 
 #### AzureDirectMethodHandler
 
-Handles [Azure IoT Hub Direct Methods](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-devguide-direct-methods?WT.mc_id=github-blog-dglover)
+Handles [Azure IoT Hub Direct Methods](https://docs.microsoft.com/azure/iot-hub/iot-hub-devguide-direct-methods?WT.mc_id=iot-0000-dglover)
 
 In Azure IoT Central, Azure IoT Hub Direct Methods are exposed in the user interface as *Commands*.
 
